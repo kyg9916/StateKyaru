@@ -27,14 +27,50 @@ def ask_kyaru():
 
     prompt = f"{KYARU_SYSTEM_PROMPT}\n\n사용자 이름: {nickname}\n질문: {user_input}"
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    # 💡 [필살기] 구글이 좋아하는 모든 모델 이름을 리스트로 만듭니다.
+    # v1과 v1beta 주소 모두에서 잘 작동하는 이름들입니다.
+    model_candidates = [
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-1.0-pro",
+        "models/gemini-1.5-flash",
+        "models/gemini-1.5-pro",
+        "models/gemini-1.0-pro"
+    ]
 
     headers = {'Content-Type': 'application/json'}
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }]
-    }
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+
+    # 모델 후보군을 하나씩 다 찔러봅니다!
+    for model_name in model_candidates:
+        # 주소를 v1beta로 고정해서 가장 넓은 범위를 탐색합니다.
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
+
+        try:
+            print(f"🔍 {model_name} 모델로 시도 중...")
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            result = response.json()
+
+            if response.status_code == 200:
+                answer = result['candidates'][0]['content']['parts'][0]['text']
+                print(f"✅ {model_name} 모델 연결 성공!")
+                return jsonify({"answer": answer})
+
+            # 만약 404 에러(못 찾음)라면 다음 모델 이름으로 넘어갑니다.
+            elif response.status_code == 404:
+                print(f"❌ {model_name}은(는) 없대요. 다음 모델로!")
+                continue
+
+            # 한도 초과(429) 시 잠시 대기
+            elif response.status_code == 429:
+                return jsonify({"answer": "아으... 진짜 질문이 너무 많아! 잠시만 쉬었다 오라고!"})
+
+        except Exception as e:
+            print(f"🔥 에러 발생: {str(e)}")
+            continue
+
+    # 모든 모델이 다 실패했을 때 (이럴 일은 거의 없습니다!)
+    return jsonify({"answer": "흥, 구글이 문을 다 잠갔나 봐... 모델이 하나도 안 보여! 좀 이따 다시 해보자!"})
 
     MAX_RETRIES = 3
     delay = 1
