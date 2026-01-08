@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>상태알라미 v6.7</title>
+<style>
+    :root {
+        --bg-color: #f0f2f5;
+        --text-color: #333333;
+        --accent-color: #5865F2;
+        --custom-color: #2ecc71;
+        --card-bg: #ffffff;
+        --border-radius: 16px;
+    }
+
+    body.dark-mode {
+        --bg-color: #1e1f22;
+        --text-color: #dbdee1;
+        --card-bg: #2b2d31;
+    }
+
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+        margin: 0;
+        padding: 20px;
+        transition: 0.3s;
+    }
+
+    .header-area { text-align: center; margin-top: 40px; margin-bottom: -10px; }
+    .header-area h1 { font-size: 2.2rem; color: var(--accent-color); margin-bottom: 5px; letter-spacing: -1px; }
+    .header-area .developer { font-size: 0.9rem; color: #888; font-weight: 500; }
+
+    h2 { margin-top: 0; font-size: 1.4rem; color: var(--accent-color); margin-bottom: 20px; }
+
+    .main-grid { display: flex; flex-wrap: wrap; gap: 20px; max-width: 1400px; margin: 40px auto; justify-content: center; }
+    .grid-column { flex: 1 1 350px; display: flex; flex-direction: column; }
+    .card { background: var(--card-bg); border-radius: var(--border-radius); padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); height: 100%; box-sizing: border-box; display: flex; flex-direction: column; }
+
+    input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; outline: none; font-size: 14px; }
+    .timer-input { width: 100px; display: inline-block; background-color: #fffbe6; margin-right: 5px; }
+
+    button { padding: 10px 12px; margin: 3px; font-size: 13px; cursor: pointer; border-radius: 8px; border: none; background-color: #f1f3f5; transition: 0.2s; }
+    button:hover { background-color: #e9ecef; transform: translateY(-2px); }
+    .btn-primary { background-color: var(--accent-color); color: white; }
+    .btn-success { background-color: var(--custom-color); color: white; }
+    .btn-back { background-color: #d1d8ff !important; font-weight: bold; width: 100%; margin: 15px 0 0 0; font-size: 15px; padding: 15px; }
+
+    .time-chip { background-color: #ffeaa7; border: 1px solid #fdcb6e; font-weight: 600; }
+    .time-chip:hover { background-color: #fab1a0; }
+
+    #status-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 20px; }
+    .status-icon { font-size: 5.5rem; margin-bottom: 25px; }
+    #display-text { font-size: 1.5rem; font-weight: bold; line-height: 1.6; text-align: center; }
+    #countdown-display { font-size: 1.5rem; color: #e74c3c; margin-top: 25px; font-weight: 800; background: #fff5f5; padding: 10px 20px; border-radius: 30px; }
+
+    #status-history { max-height: 250px; overflow-y: auto; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 8px; margin-top: 10px; flex-grow: 1; }
+    .dark-mode #status-history { background: #35373c; }
+    .history-item { padding: 8px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+
+    .warning-box { background-color: #fff5f5; border-left: 4px solid #ff8787; padding: 12px; margin-top: 15px; font-size: 0.8rem; text-align: left; color: #e03131; }
+    .dark-mode .warning-box { background-color: #3b2525; color: #ffc9c9; }
+
+    .theme-btn { position: fixed; top: 20px; right: 20px; background-color: var(--accent-color); color: white; width: 45px; height: 45px; border-radius: 50%; z-index: 1000; }
+
+    /* 푸터 스타일 */
+.footer-info {
+    max-width: 1400px;
+    margin: 40px auto 20px;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.03); /* 아주 연한 회색 */
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.6;
+}
+
+.dark-mode .footer-info {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #aaa;
+}
+
+.footer-info strong {
+    color: var(--accent-color);
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.footer-info ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.footer-info ul li {
+    margin-bottom: 5px;
+}
+
+</style>
+</head>
+<body>
+
+<button class="theme-btn" onclick="toggleTheme()">🌓</button>
+
+<div class="header-area">
+    <h1>📡 디스코드 상태알라미 v6.7</h1>
+    <div class="developer">Developer by. 김윤겸</div>
+</div>
+
+<div class="main-grid">
+    <div class="grid-column">
+        <div class="card">
+            <h2>👤 내 설정</h2>
+            <input type="text" id="nickname" placeholder="닉네임을 입력하세요" oninput="saveNickname()">
+
+            <div style="margin-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong>⏱ 복귀 시간 선택 (분)</strong>
+                    <button class="time-chip" style="background-color: #ff7675; color: white; border: none; margin: 0; font-size: 11px; padding: 5px 10px;" onclick="resetTimeValue()">초기화 🔄</button>
+                </div>
+                <div style="margin: 10px 0;">
+                    <button class="time-chip" onclick="setTimeValue(3)">3분</button>
+                    <button class="time-chip" onclick="setTimeValue(5)">5분</button>
+                    <button class="time-chip" onclick="setTimeValue(10)">10분</button>
+                    <button class="time-chip" onclick="setTimeValue(20)">20분</button>
+                    <button class="time-chip" onclick="setTimeValue(30)">30분</button>
+                    <button class="time-chip" onclick="setTimeValue(60)">60분</button>
+                </div>
+                <div style="display: flex; align-items: center; margin-top: 10px;">
+                    <input type="number" id="return-time" class="timer-input" placeholder="직접 입력">
+                    <span>분 후 복귀</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 10px; border: 1px dashed #ddd;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+        <span style="font-size: 0.8rem; font-weight: bold; color: #666;">⏳ 타이머 연장하기</span>
+        <button onclick="document.getElementById('extend-direct-time').value=''" style="background: #ff7675; color: white; border: none; margin: 0; font-size: 10px; padding: 2px 6px;">초기화 🔄</button>
+    </div>
+
+    <button onclick="extendTime(1)" style="background: #e1f5fe; color: #0288d1; font-size: 11px;">+1분</button>
+    <button onclick="extendTime(3)" style="background: #e1f5fe; color: #0288d1; font-size: 11px;">+3분</button>
+    <button onclick="extendTime(5)" style="background: #e1f5fe; color: #0288d1; font-size: 11px;">+5분</button>
+    <button onclick="extendTime(10)" style="background: #e1f5fe; color: #0288d1; font-size: 11px;">+10분</button>
+    <button onclick="extendTime(30)" style="background: #e1f5fe; color: #0288d1; font-size: 11px;">+30분</button>
+                <button onclick="extendTime(60)" style="background: #e1f5fe; color: #0288d1; font-size: 11px;">+60분</button>
+
+    <div style="display: flex; align-items: center; margin-top: 8px;">
+        <input type="number" id="extend-direct-time" class="timer-input" style="width: 70px; height: 30px; margin: 0 5px 0 0;" placeholder="분">
+        <button class="btn-success" style="padding: 5px 10px; font-size: 11px; margin: 0;" onclick="extendDirect()">연장하기</button>
+    </div>
+</div>
+
+            <hr style="margin: 25px 0; border: 0; border-top: 1px solid #eee;">
+
+            <h2>📍 빠른 상태 선택</h2>
+            <div class="btn-group">
+                <button onclick="send('eat', '밥')">🍚 밥</button>
+                <button onclick="send('toilet', '화장실')">🚽 화장실</button>
+                <button onclick="send('coffee', '커피')">☕ 커피</button>
+                <button onclick="send('shop', '쇼핑')">🛒 쇼핑</button>
+                <button onclick="send('outing', '외출')">🏃 외출</button>
+                <button onclick="send('cigarette', '담배')">🚬 담배</button>
+                <button onclick="send('nap', '잠')">😴 잠</button>
+                <button onclick="send('back', '복귀')" class="btn-back">✅ 지금 자리로 복귀하기</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-column">
+        <div class="card">
+            <h2>✨ 커스텀 & 기록</h2>
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 0.9rem; font-weight: bold;">나만의 상태 입력</label>
+                <input type="text" id="custom-status" placeholder="회의, 산책 등 직접 작성" onkeypress="if(event.keyCode==13) sendCustomStatus()">
+                <button class="btn-success" style="width:100%;" onclick="sendCustomStatus()">상태 업데이트</button>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 0.9rem; font-weight: bold;">메시지만 전송</label>
+                <input type="text" id="direct-msg" placeholder="단순 메시지 입력" onkeypress="if(event.keyCode==13) sendDirectMsg()">
+                <button class="btn-primary" style="width:100%;" onclick="sendDirectMsg()">메시지 보내기</button>
+            </div>
+            <div class="history-title" style="font-weight: bold; margin-bottom: 5px;">📜 활동 기록</div>
+            <div id="status-history"></div>
+        </div>
+    </div>
+
+    <div class="grid-column">
+    <div class="card" style="border: 2px solid var(--accent-color); margin-bottom: 20px;">
+        <h2>📡 실시간 상태</h2>
+        <div id="status-display">
+            <span class="status-icon" id="display-icon">❓</span>
+            <span id="display-text">상태를 선택하면<br>여기에 표시됩니다!</span>
+            <div id="countdown-display" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="card" style="border: 2px solid #ff7675;">
+        <h2>🐱 캬루에게 질문하기 (개발중) </h2>
+        <div style="font-size: 0.8rem; color: #888; margin-bottom: 10px;">
+            츤데레 캬루쨩에게 말을 걸어보세요!
+        </div>
+        <input type="text" id="kyaru-input" placeholder="야! 뭐 물어볼 거라도 있어? (Enter)" onkeypress="if(event.keyCode==13) askKyaru()">
+        <button class="btn-primary" style="width: 100%; background-color: #ff7675;" onclick="askKyaru()">질문 던지기</button>
+
+        <div id="kyaru-response" style="margin-top: 15px; padding: 12px; background: #fff5f5; border-radius: 12px; font-size: 0.9rem; min-height: 50px; display: none; border: 1px dashed #ff7675;">
+            <strong>🐱 캬루:</strong> <span id="kyaru-text"></span>
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="footer-info">
+    <strong>📘 앱 사용 방법</strong>
+<ul>
+    <li>닉네임을 먼저 입력한 후, 현재 상태를 선택하세요.</li>
+    <li>복귀 시간이 필요한 경우, 상태 선택 전에 분 단위로 시간을 설정하면 자동 타이머가 시작됩니다.</li>
+    <li>빠른 상태 버튼을 누르면 디스코드에 현재 상태와 복귀 예정 시각이 전송됩니다.</li>
+    <li>상태 진행 중에는 타이머 연장 버튼을 통해 복귀 시간을 추가로 늘릴 수 있습니다.</li>
+    <li>복귀 버튼을 누르면 즉시 상태가 종료되며, 자동 복귀 타이머도 함께 해제됩니다.</li>
+</ul>
+
+    <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 15px 0;">
+
+    <strong>⏱ 타이머 기능 사용 시 주의사항</strong>
+<ul>
+    <li>타이머는 브라우저에 저장되며, 같은 브라우저에서만 상태 복구가 가능합니다.</li>
+    <li>브라우저를 완전히 종료하거나 저장 데이터가 삭제되면 타이머 정보가 사라질 수 있습니다.</li>
+    <li>복귀 시간이 지난 상태에서 연장할 경우, 연장은 현재 시점을 기준으로 다시 계산됩니다.</li>
+    <li>자동 복귀 시에도 디스코드로 복귀 상태가 전송되며, 알림 권한이 허용된 경우 알림이 표시됩니다.</li>
+    <li>네트워크 상태에 따라 디스코드 메시지 전송이 지연되거나 실패할 수 있습니다.</li>
+</ul>
+
+    <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 15px 0;">
+
+    <strong>⏱ 알람 사용과 쿠키에 대해</strong>
+
+    <ul>
+        <li>창 유지 필수: 타이머는 브라우저 엔진에서 돌아가요. 창을 완전히 닫거나 컴퓨터가 절전 모드에 들어가면 자동 복귀 기능이 멈출 수 있으니 주의해 주세요!</li>
+        <li>새로고침 안심: 다행히 새로고침을 하거나 실수로 창을 잠시 닫아도, 기존에 설정한 타이머는 로컬 저장소 덕분에 자동으로 복구됩니다.</li>
+        <li>알림 허용: 타이머가 끝났을 때 알림을 받고 싶다면, 브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 '알림 권한'을 꼭 허용해 주세요.</li>
+    </ul>
+
+    <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 15px 0;">
+
+    <p style="text-align: center; margin-top: 20px; opacity: 0.6; font-size: 0.75rem;">© 2026 김윤겸. All rights reserved.</p>
+</div>
+
+<script>
+let countdownInterval;
+const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1458643194270056489/Ec0iQFL8m-sCdPC7AI29wqq0Cq_LDiLeI8Z5Rsp0Yrh7UEY8ysftSdEF-NeYdKkTQBBp";
+// 테스트용 https://discord.com/api/webhooks/1458643194270056489/Ec0iQFL8m-sCdPC7AI29wqq0Cq_LDiLeI8Z5Rsp0Yrh7UEY8ysftSdEF-NeYdKkTQBBp
+// 실제 https://discord.com/api/webhooks/1458597916955381800/FjIDySDIfP-kZp1udUCL7o6pQN0pv7yJyz0KLiYcLrEm6FyrK10Z5Z9XJnNN0JpRGpxf
+window.onload = function() {
+    const savedName = localStorage.getItem('userNickname');
+    if (savedName) document.getElementById('nickname').value = savedName;
+    if (Notification.permission !== 'granted') Notification.requestPermission();
+    restoreStatus();
+}
+
+function saveNickname() { localStorage.setItem('userNickname', document.getElementById('nickname').value); }
+function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+function resetTimeValue() { document.getElementById('return-time').value = ""; }
+function setTimeValue(min) { document.getElementById('return-time').value = min; }
+
+function getNowFormatted() {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
+// 💬 단순 메시지 전송 (Embed 적용)
+function sendDirectMsg() {
+    const nickname = document.getElementById('nickname').value.trim();
+    const content = document.getElementById('direct-msg').value.trim();
+    if (!nickname || !content) return alert("닉네임과 내용을 입력해주세요!");
+
+    const timestamp = getNowFormatted();
+    const embedData = {
+        embeds: [{
+            author: { name: nickname },
+            description: `💬 ${content}`,
+            color: 5814783,
+            footer: { text: `발송 시각: ${timestamp}` }
+        }]
+    };
+
+    fetch(DISCORD_WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(embedData) });
+    addHistoryItem(nickname, `💬 ${content}`, timestamp);
+    document.getElementById('direct-msg').value = "";
+}
+
+function sendCustomStatus() {
+    const text = document.getElementById('custom-status').value.trim();
+    if (!text) return alert("상태 내용을 입력해주세요!");
+    send('etc', text);
+}
+
+function getActionMessage(action, customText = "") {
+    const messages = { eat: "밥 먹으러 갔어요!", toilet: "잠시 화장실에 갔어요!", coffee: "커피 한 잔 마시고 올게요!", shop: "잠깐 쇼핑하러 나갔어요!", outing: "잠시 외출 중이에요!", cigarette: "담배 한 대 피우고 올게요!", nap: "꿀잠 자러 갔어요!", back: "자리로 돌아왔어요!", etc: `${customText} 중이에요!` };
+    return messages[action] || "활동 중이에요!";
+}
+
+let isProcessingBack = false; // 복귀 처리가 진행 중인지 확인하는 변수
+
+// 🚀 상태 전송 메인 함수 (Embed 적용)
+function send(action, statusName) {
+    const nickname = document.getElementById('nickname').value.trim();
+    const returnTimeValue = document.getElementById('return-time').value.trim();
+    const returnTime = returnTimeValue ? parseInt(returnTimeValue) : null;
+    if (!nickname) { alert("닉네임을 입력해주세요!"); return; }
+
+    // [추가] 복귀 중복 방지 로직
+    if (action === 'back') {
+        if (isProcessingBack) return; // 이미 복귀 처리 중이면 함수 종료
+        isProcessingBack = true;
+
+        // 3초 뒤에 다시 복귀 버튼을 누를 수 있게 초기화 (도배 방지)
+        setTimeout(() => { isProcessingBack = false; }, 3000);
+    }
+
+    clearInterval(countdownInterval);
+    document.getElementById('countdown-display').style.display = "none";
+
+    const design = {
+        eat: { icon: "🍚", color: 16753920 },
+        toilet: { icon: "🚽", color: 3447003 },
+        coffee: { icon: "☕", color: 10181046 },
+        shop: { icon: "🛒", color: 15844367 },
+        outing: { icon: "🏃", color: 15105570 },
+        cigarette: { icon: "🚬", color: 9807270 },
+        nap: { icon: "😴", color: 15548997 },
+        back: { icon: "✅", color: 3066993 },
+        etc: { icon: "✨", color: 5814783 }
+    };
+
+    const info = design[action] || design.etc;
+    const statusMsg = getActionMessage(action, statusName);
+    const timestamp = getNowFormatted();
+
+    // --- 💡 예상 복귀 시각 계산 로직 추가 ---
+    let estimatedReturnMsg = "즉시/없음";
+    if (action !== 'back' && returnTime) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + returnTime); // 현재 시간에 '입력한 분'을 더함
+        const hour = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        estimatedReturnMsg = `${returnTime}분 후 (${hour}:${min} 예정)`;
+    }
+    // ---------------------------------------
+
+    const embedData = {
+        embeds: [{
+            title: `${info.icon} ${nickname}님의 상태`,
+            color: info.color,
+            description: `${statusMsg}`,
+            fields: [
+                { name: "현재 상태", value: statusName, inline: true },
+                { name: "복귀 예정 시각", value: estimatedReturnMsg, inline: true } // 👈 메시지 변경
+            ],
+            footer: { text: `발생 시각: ${timestamp}` }
+        }]
+    };
+
+    fetch(DISCORD_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(embedData)
+    });
+
+    updateUI(nickname, info.icon, statusName, timestamp, statusMsg);
+
+    // 저장 및 타이머 로직 (기존과 동일)
+    if (action !== 'back') {
+        const expireTime = returnTime ? Date.now() + (returnTime * 60000) : null;
+        localStorage.setItem('currentStatus', JSON.stringify({ nickname, icon: info.icon, statusName, expireTime }));
+        if (returnTime) {
+            document.getElementById('countdown-display').style.display = "block";
+            startTimer(returnTime * 60);
+        }
+    } else {
+        localStorage.removeItem('currentStatus');
+        document.getElementById('return-time').value = "";
+        document.getElementById('countdown-display').innerText = "";
+    }
+}
+
+function updateUI(nickname, icon, statusName, timestamp, msg) {
+    document.getElementById('display-icon').innerText = icon;
+    document.getElementById('display-text').innerHTML = `
+        <span style="color:#5865F2; font-size:1.1rem;">${nickname}</span><br>
+        <span style="color:#e74c3c;">[${statusName}]</span> 중<br>
+        <small style="font-size: 0.85rem; color: #777;">(${msg})</small>
+    `;
+    addHistoryItem(nickname, msg, timestamp);
+}
+
+function addHistoryItem(nickname, msg, timestamp) {
+    const historyBox = document.getElementById('status-history');
+    const newRecord = `<div class="history-item"><small style="color:gray;">${timestamp}</small> <strong>${nickname}</strong>: ${msg}</div>`;
+    historyBox.innerHTML = newRecord + historyBox.innerHTML;
+}
+
+function startTimer(secondsTotal) {
+    let secondsLeft = Math.floor(secondsTotal);
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    countdownInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+            clearInterval(countdownInterval);
+            if (Notification.permission === 'granted') new Notification("복귀 알림", { body: "복귀 시간이 되었습니다!" });
+
+            send('back', '자동 복귀');
+            return;
+        }
+        const m = Math.floor(secondsLeft / 60);
+        const s = secondsLeft % 60;
+        document.getElementById('countdown-display').innerText = `⏳ 복귀까지 ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} 남음`;
+    }, 1000);
+}
+
+function restoreStatus() {
+    const data = localStorage.getItem('currentStatus');
+    if (!data) return;
+    const { nickname, icon, statusName, expireTime } = JSON.parse(data);
+    const now = Date.now();
+    if (expireTime && now > expireTime) { localStorage.removeItem('currentStatus'); return; }
+    updateUI(nickname, icon, statusName, getNowFormatted(), "상태 복구됨");
+    if (expireTime) {
+        document.getElementById('countdown-display').style.display = "block";
+        startTimer((expireTime - now) / 1000);
+    }
+}
+
+    function extendTime(min) {
+    const data = localStorage.getItem('currentStatus');
+    if (!data) {
+        alert("현재 실행 중인 타이머가 없습니다. 상태를 먼저 선택해주세요!");
+        return;
+    }
+
+    const statusData = JSON.parse(data);
+    const now = Date.now();
+
+    // 1. 새로운 만료 시간 계산
+    let baseTime = (statusData.expireTime && statusData.expireTime > now)
+                   ? statusData.expireTime
+                   : now;
+
+    const newExpireTime = baseTime + (min * 60000);
+    const remainingSeconds = Math.floor((newExpireTime - now) / 1000);
+
+    // --- 💡 [추가] 새로운 복귀 예정 시각 계산 ---
+    const targetDate = new Date(newExpireTime);
+    const targetHour = String(targetDate.getHours()).padStart(2, '0');
+    const targetMin = String(targetDate.getMinutes()).padStart(2, '0');
+    const estimatedTimeStr = `${targetHour}:${targetMin} 예정`;
+    // ------------------------------------------
+
+    // 2. 데이터 업데이트 및 타이머 재시작
+    statusData.expireTime = newExpireTime;
+    localStorage.setItem('currentStatus', JSON.stringify(statusData));
+
+    clearInterval(countdownInterval);
+    document.getElementById('countdown-display').style.display = "block";
+    startTimer(remainingSeconds);
+
+    // 3. 디스코드에 연장 알림 전송 (복귀 예정 시각 포함)
+    const timestamp = getNowFormatted();
+    const embedData = {
+        embeds: [{
+            title: `⏳ 시간 연장 알림`,
+            color: 3447003, // 파란색
+            description: `${statusData.nickname}님의 복귀 시간이 ${min}분 연장되었습니다.`,
+            fields: [
+                { name: "남은 시간", value: `${Math.floor(remainingSeconds / 60)}분`, inline: true },
+                { name: "복귀 예정 시각", value: estimatedTimeStr, inline: true } // 👈 새로 추가된 필드
+            ],
+            footer: { text: `연장 시각: ${timestamp}` }
+        }]
+    };
+
+    fetch(DISCORD_WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(embedData) });
+
+    // 4. 기록 추가
+    addHistoryItem(statusData.nickname, `⏳ 시간을 ${min}분 연장함 (예정: ${targetHour}:${targetMin})`, timestamp);
+}
+
+    // 직접 입력한 값으로 시간을 연장하는 함수
+function extendDirect() {
+    const min = document.getElementById('extend-direct-time').value;
+    if (!min || min <= 0) {
+        alert("연장할 시간을 숫자로 입력해주세요!");
+        return;
+    }
+    extendTime(parseInt(min)); // 기존에 만든 extendTime 함수를 재사용합니다!
+    document.getElementById('extend-direct-time').value = ""; // 입력창 비우기
+}
+
+    async function askKyaru() {
+    const inputField = document.getElementById('kyaru-input');
+    const question = inputField.value.trim();
+    const responseBox = document.getElementById('kyaru-response');
+    const responseText = document.getElementById('kyaru-text');
+
+    if (!question) return alert("바보야! 물어볼 말을 써야지!");
+
+    // UI 업데이트
+    responseText.innerText = "생각 중이니까 좀 기다려 봐...!";
+    responseBox.style.display = "block";
+    inputField.value = "";
+
+    try {
+        // 파이썬 Flask 서버의 /action 또는 새로운 /ask 엔드포인트로 요청
+        // 현재 Flask 코드에 질문 답변용 API를 추가해야 통신이 가능합니다.
+        const response = await fetch('/ask_kyaru', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: question, nickname: document.getElementById('nickname').value })
+        });
+
+        const data = await response.json();
+        responseText.innerText = data.answer;
+    } catch (error) {
+        responseText.innerText = "흥! 서버랑 연결이 안 되잖아. 네가 뭘 잘못한 거 아냐?";
+        console.error("Error:", error);
+    }
+}
+
+</script>
+</body>
+</html>
