@@ -27,9 +27,7 @@ def ask_kyaru():
 
     prompt = f"{KYARU_SYSTEM_PROMPT}\n\n사용자 이름: {nickname}\n질문: {user_input}"
 
-    # --- 💡 필살기: 구글 API 직접 호출 주소 ---
-    # 주소에 직접 'v1' 정식 버전을 명시해서 404를 원천 차단합니다.
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent?key={GEMINI_API_KEY}"
 
     headers = {'Content-Type': 'application/json'}
     payload = {
