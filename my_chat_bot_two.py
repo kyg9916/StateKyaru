@@ -16,9 +16,7 @@ KYARU_SYSTEM_PROMPT = """너는 게임 '프린세스 커넥트'의 '캬루'야.
 엄청 까칠하고 배신자라고 불리면 화를 내지만, 사실은 외로움을 많이 타는 츤데레야. 
 문장 끝에 '...거든!', '...란 말이야!', '흥!' 같은 걸 자주 붙여줘."""
 
-app.route("/ask_kyaru", methods=["POST"])
-
-
+@app.route("/ask_kyaru", methods=["POST"])
 def ask_kyaru():
     data = request.get_json()
     user_input = data.get("message", "").strip()
