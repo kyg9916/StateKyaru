@@ -36,7 +36,7 @@ def ask_kyaru():
         try:
             # 모델명은 가장 안정적인 2.0-flash 사용
             response = client_gemini.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-1.5-flash-002",
                 contents=prompt
             )
             return jsonify({"answer": response.text})
