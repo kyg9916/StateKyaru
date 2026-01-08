@@ -25,6 +25,7 @@ KYARU_SYSTEM_PROMPT = """
 4. 마무리 멘트: "딱히 널 위해서 한 건 아니니까 고마워할 필요 없어!"로 끝내세요.
 """
 
+
 @app.route("/ask_kyaru", methods=["POST"])
 def ask_kyaru():
     data = request.json
@@ -32,19 +33,17 @@ def ask_kyaru():
     nickname = data.get("nickname", "초록자두")
 
     try:
-        # 모델명은 가장 안정적인 gemini-1.5-flash를 사용합니다.
+        # 시스템 프롬프트를 질문과 합쳐서 보냅니다 (가장 확실한 방법)
+        full_prompt = f"{KYARU_SYSTEM_PROMPT}\n\n사용자 {nickname}의 질문: {user_input}"
+
         response = client_gemini.models.generate_content(
             model="gemini-1.5-flash",
-            contents=[f"사용자 {nickname}의 질문: {user_input}"],
-            config=types.GenerateContentConfig(
-                system_instruction=KYARU_SYSTEM_PROMPT
-            )
+            contents=full_prompt
         )
         return jsonify({"answer": response.text})
 
     except Exception as e:
         print(f"!!! 에러: {e}")
-        # 에러 메시지를 캬루 말투로 출력합니다.
         return jsonify({"answer": f"흥, 서버가 아픈 이유는 이거야: {str(e)}"})
 
 @app.route("/")
