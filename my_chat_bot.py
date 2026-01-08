@@ -241,8 +241,11 @@ async def on_message(message):
             await thinking.edit(content=f"🚫 얌마! 모델 처리 중에 오류 발생했다: `{e}`")
 
 # 봇 실행
+import os
 def run_flask():
-    app.run(port=5000)
+    # 렌더가 정해준 포트를 가져오고, 없으면 10000번을 씁니다.
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
 
 threading.Thread(target=run_flask, daemon=True).start()
 client_discord.run(DISCORD_TOKEN)
