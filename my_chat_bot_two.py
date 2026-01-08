@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify, render_template
 from google import genai
 import os
-import time  # 재시도 대기 시간을 위해 필요해요!
+import time
 
 app = Flask(__name__)
 
@@ -10,11 +10,9 @@ app = Flask(__name__)
 GEMINI_API_KEY = os.environ.get("MY_GEMINI_KEY")
 client_gemini = genai.Client(api_key=GEMINI_API_KEY)
 
-# 2. 캬루 성격 설정
-KYARU_SYSTEM_PROMPT = """
-당신은 '캬루'라는 이름의 디스코드 봇이며, 츤데레 성격을 가지고 있습니다.
-항상 까칠하게 시작해서 친절하게 설명하고, 마지막은 츤데레답게 마무리하세요.
-"""
+# 2. 캬루 성격 설정 (디스코드의 긴 프롬프트를 쓰셔도 좋지만, 여기선 요약본으로!)
+KYARU_SYSTEM_PROMPT = """당신은 '캬루'라는 이름의 디스코드 봇이며, 츤데레 성격을 가지고 있습니다.
+항상 까칠하게 시작해서 친절하게 설명하고, 마지막은 츤데레답게 마무리하세요."""
 
 
 @app.route("/ask_kyaru", methods=["POST"])
@@ -28,37 +26,37 @@ def ask_kyaru():
 
     prompt = f"{KYARU_SYSTEM_PROMPT}\n\n사용자 이름: {nickname}\n질문:\n{user_input}"
 
-    # --- 재시도 로직 시작 ---
-    MAX_RETRIES = 5  # 최대 5번 재시도
-    delay = 1  # 초기 대기 시간 (1초)
+    # --- [디스코드 로직 이식] 재시도 설정 ---
+    MAX_RETRIES = 10  # 디스코드 코드와 동일하게 10번!
+    delay = 1  # 디스코드 코드와 동일하게 1초부터 시작!
 
     for attempt in range(MAX_RETRIES):
         try:
+            # 모델명은 가장 안정적인 2.0-flash 사용
             response = client_gemini.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=prompt
             )
-            # 성공하면 바로 답변 반환!
             return jsonify({"answer": response.text})
 
         except Exception as e:
             error_str = str(e)
-            # 429 에러이고, 아직 재시도 횟수가 남았다면?
+            # 429(할당량 초과) 에러인 경우 재시도 로직 가동
             if "429" in error_str and attempt < MAX_RETRIES - 1:
-                print(f"⚠️ [재시도 {attempt + 1}] 할당량 초과! {delay}초 후 다시 시도합니다...")
-                time.sleep(delay)  # 대기
-                delay *= 2  # 대기 시간을 2배로 늘림 (지수 백오프)
-                continue  # 다음 루프로 이동 (재시도)
+                # 서버 로그에 재시도 상황 기록
+                print(f"⚠️ [시도 {attempt + 1}/{MAX_RETRIES}] 캬루가 생각 중... {delay}초 뒤 다시 시도!")
+                time.sleep(delay)
+                delay *= 2  # 디스코드 로직처럼 2배씩 증가 (1, 2, 4, 8, 16...)
+                continue
 
-            # 그 외의 에러이거나 재시도를 다 썼다면?
-            print(f"❌ 최종 에러 발생: {e}")
+            # 10번 다 실패했거나 다른 에러인 경우
+            print(f"❌ 최종 실패: {e}")
             if "429" in error_str:
                 error_msg = "아으... 진짜 질문이 너무 많아! 지금은 도저히 생각이 안 나니까 1분만 있다가 다시 와!"
             else:
                 error_msg = f"흥, 서버가 지금 삐걱거리는 것 같아… ({error_str})"
 
             return jsonify({"answer": error_msg})
-    # --- 재시도 로직 끝 ---
 
 
 @app.route("/")
