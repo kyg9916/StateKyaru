@@ -28,18 +28,17 @@ KYARU_SYSTEM_PROMPT = """
 5. 호칭: 사용자를 부를 때는 '너' 또는 '당신' 보다는 "정말~", "어이 거기!" 같은 느낌으로 불러주세요.
 """
 
-
 # 4. 웹 대시보드에서 보낸 질문 처리 API
 @app.route("/ask_kyaru", methods=["POST"])
 def ask_kyaru():
     data = request.json
     user_input = data.get("message", "").strip()
-    nickname = data.get("nickname", "초록자두") # 기본값 설정
+    nickname = data.get("nickname", "초록자두")
 
     try:
-        # 1. 모델명을 가장 안정적인 'gemini-1.5-flash'로 우선 시도해봅시다!
+        # 이 부분을 수정하세요! 모델명 앞에 'models/'를 붙여주는 게 더 정확합니다.
         response = client_gemini.models.generate_content(
-            model="gemini-1.5-flash",
+            model="models/gemini-1.5-flash",  # <--- "gemini-1.5-flash"를 "models/gemini-1.5-flash"로 변경!
             contents=[f"사용자 {nickname}의 질문: {user_input}"],
             config=types.GenerateContentConfig(
                 system_instruction=KYARU_SYSTEM_PROMPT
@@ -50,7 +49,6 @@ def ask_kyaru():
         return jsonify({"answer": bot_answer})
 
     except Exception as e:
-        # 랜더 로그에서 진짜 에러 이유를 보기 위해 프린트 추가!
         print(f"!!! 캬루 서버 에러 상세 정보: {e}")
         return jsonify({"answer": f"흥, 서버가 아픈 이유는 이거야: {str(e)}"})
 
