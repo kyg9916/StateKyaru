@@ -257,17 +257,23 @@
     </div>
 
     <div class="card" style="border: 2px solid #ff7675;">
-        <h2>🐱 캬루에게 질문하기</h2>
-        <div style="font-size: 0.8rem; color: #888; margin-bottom: 10px;">
-            츤데레 캬루쨩에게 말을 걸어보세요!
-        </div>
-        <input type="text" id="kyaru-input" placeholder="야! 뭐 물어볼 거라도 있어? (Enter)" onkeypress="if(event.keyCode==13) askKyaru()">
-        <button class="btn-primary" style="width: 100%; background-color: #ff7675;" onclick="askKyaru()">질문 던지기</button>
-
-        <div id="kyaru-response" style="margin-top: 15px; padding: 12px; background: #fff5f5; border-radius: 12px; font-size: 0.9rem; min-height: 50px; display: none; border: 1px dashed #ff7675;">
-            <strong>🐱 캬루:</strong> <span id="kyaru-text"></span>
-        </div>
+    <h2>🐱 캬루에게 질문하기</h2>
+    <div style="font-size: 0.8rem; color: #888; margin-bottom: 10px;">
+        츤데레 캬루쨩에게 말을 걸어보세요!
     </div>
+
+    <input type="text" id="kyaru-input" placeholder="야! 뭐 물어볼 거라도 있어? (Enter)" onkeypress="if(event.keyCode==13) askKyaru()">
+    <button class="btn-primary" style="width: 100%; background-color: #ff7675;" onclick="askKyaru()">질문 던지기</button>
+
+    <div id="kyaru-loading" style="display: none; text-align: center; margin-top: 15px;">
+        <img src="{{ url_for('static', filename='kyal.gif') }}" alt="생각중인 캬루" style="width: 100px; border-radius: 50%;">
+        <p style="font-size: 0.8rem; color: #ff7675; font-weight: bold;">캬루가 머리를 짜내고 있어...!</p>
+    </div>
+
+    <div id="kyaru-response" style="margin-top: 15px; padding: 12px; background: #fff5f5; border-radius: 12px; font-size: 0.9rem; min-height: 50px; display: none; border: 1px dashed #ff7675;">
+        <strong>🐱 캬루:</strong> <span id="kyaru-text"></span>
+    </div>
+</div>
 </div>
 </div>
 
@@ -530,26 +536,35 @@ function extendDirect() {
     const question = inputField.value.trim();
     const responseBox = document.getElementById('kyaru-response');
     const responseText = document.getElementById('kyaru-text');
+    const loadingBox = document.getElementById('kyaru-loading'); // 로딩 박스 가져오기
 
     if (!question) return alert("바보야! 물어볼 말을 써야지!");
 
-    // UI 업데이트
-    responseText.innerText = "생각 중이니까 좀 기다려 봐...!";
-    responseBox.style.display = "block";
+    // 1. UI 초기화: 로딩 애니메이션 보여주고, 이전 답변은 숨기기
+    loadingBox.style.display = "block";
+    responseBox.style.display = "none";
     inputField.value = "";
 
     try {
-        // 파이썬 Flask 서버의 /action 또는 새로운 /ask 엔드포인트로 요청
-        // 현재 Flask 코드에 질문 답변용 API를 추가해야 통신이 가능합니다.
         const response = await fetch('/ask_kyaru', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: question, nickname: document.getElementById('nickname').value })
+            body: JSON.stringify({
+                message: question,
+                nickname: document.getElementById('nickname').value
+            })
         });
 
         const data = await response.json();
+
+        // 2. 답변 완료: 로딩 숨기고, 답변 박스 보여주기
+        loadingBox.style.display = "none";
+        responseBox.style.display = "block";
         responseText.innerText = data.answer;
+
     } catch (error) {
+        loadingBox.style.display = "none";
+        responseBox.style.display = "block";
         responseText.innerText = "흥! 서버랑 연결이 안 되잖아. 네가 뭘 잘못한 거 아냐?";
         console.error("Error:", error);
     }
