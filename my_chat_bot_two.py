@@ -38,7 +38,7 @@ def ask_kyaru():
     try:
         # 이 부분을 수정하세요! 모델명 앞에 'models/'를 붙여주는 게 더 정확합니다.
         response = client_gemini.models.generate_content(
-            model="models/gemini-1.5-flash",  # <--- "gemini-1.5-flash"를 "models/gemini-1.5-flash"로 변경!
+            model="gemini-1.5-flash",  # 다시 'models/'를 빼고 시도!
             contents=[f"사용자 {nickname}의 질문: {user_input}"],
             config=types.GenerateContentConfig(
                 system_instruction=KYARU_SYSTEM_PROMPT
