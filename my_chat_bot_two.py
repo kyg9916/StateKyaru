@@ -30,7 +30,7 @@ def ask_kyaru():
     try:
         # 랜더(최신 환경)에서는 이 모델명이 가장 잘 작동합니다!
         response = client_gemini.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-1.5-flash",
             contents=[f"사용자 {nickname}의 질문: {user_input}"],
             config=types.GenerateContentConfig(
                 system_instruction=KYARU_SYSTEM_PROMPT
