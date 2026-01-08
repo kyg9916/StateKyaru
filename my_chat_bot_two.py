@@ -34,15 +34,12 @@ KYARU_SYSTEM_PROMPT = """
 def ask_kyaru():
     data = request.json
     user_input = data.get("message", "").strip()
-    nickname = data.get("nickname", "이름없는 바보")
-
-    if not user_input:
-        return jsonify({"answer": "할 말도 없으면서 왜 불러? 바보 아냐?"}), 400
+    nickname = data.get("nickname", "초록자두") # 기본값 설정
 
     try:
-        # Gemini에게 질문 전달 (캬루의 성격 주입)
+        # 1. 모델명을 가장 안정적인 'gemini-1.5-flash'로 우선 시도해봅시다!
         response = client_gemini.models.generate_content(
-            model="gemini-2.0-flash",  # 최신 모델 사용
+            model="gemini-1.5-flash",
             contents=[f"사용자 {nickname}의 질문: {user_input}"],
             config=types.GenerateContentConfig(
                 system_instruction=KYARU_SYSTEM_PROMPT
@@ -53,8 +50,9 @@ def ask_kyaru():
         return jsonify({"answer": bot_answer})
 
     except Exception as e:
-        print(f"에러 발생: {e}")
-        return jsonify({"answer": "흥, 서버가 좀 아픈가 봐... 나중에 다시 하던가! (에러 발생)"}), 500
+        # 랜더 로그에서 진짜 에러 이유를 보기 위해 프린트 추가!
+        print(f"!!! 캬루 서버 에러 상세 정보: {e}")
+        return jsonify({"answer": f"흥, 서버가 아픈 이유는 이거야: {str(e)}"})
 
 
 # 5. 메인 페이지 연결 (HTML 파일을 templates 폴더에 넣었을 때)
