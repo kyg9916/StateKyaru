@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, request, jsonify, render_template
+from google import genai
 import os
 import time
-import requests  # 👈 라이브러리 대신 직접 통신하기 위해 필요해요!
 
 app = Flask(__name__)
 
 # 1. 환경 변수 로드
 GEMINI_API_KEY = os.environ.get("MY_GEMINI_KEY")
+client_gemini = genai.Client(api_key=GEMINI_API_KEY)
 
-# 2. 캬루 성격 설정
+# 2. 캬루 성격 설정 (디스코드의 긴 프롬프트를 쓰셔도 좋지만, 여기선 요약본으로!)
 KYARU_SYSTEM_PROMPT = """너는 게임 '프린세스 커넥트'의 '캬루'야. 
 말투는 항상 반말로 하고, 상대방을 '너'라고 불러. 
 엄청 까칠하고 배신자라고 불리면 화를 내지만, 사실은 외로움을 많이 타는 츤데레야. 
 문장 끝에 '...거든!', '...란 말이야!', '흥!' 같은 걸 자주 붙여줘."""
 
+app.route("/ask_kyaru", methods=["POST"])
 
-@app.route("/ask_kyaru", methods=["POST"])
+
 def ask_kyaru():
     data = request.get_json()
     user_input = data.get("message", "").strip()
@@ -25,52 +27,39 @@ def ask_kyaru():
     if not user_input:
         return jsonify({"answer": "흥? 질문도 없이 뭘 바라는 거야…"})
 
-    prompt = f"{KYARU_SYSTEM_PROMPT}\n\n사용자 이름: {nickname}\n질문: {user_input}"
+    prompt = f"{KYARU_SYSTEM_PROMPT}\n\n사용자 이름: {nickname}\n질문:\n{user_input}"
 
-    # 1. 모델 후보군을 아주 깨끗한 이름으로만 준비합니다. (models/ 를 뺍니다!)
-    model_candidates = [
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-1.0-pro"
-    ]
+    MAX_RETRIES = 3
+    delay = 1
 
-    headers = {'Content-Type': 'application/json'}
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
-
-    # 2. 모델 후보군을 하나씩 찔러봅니다.
-    for model_name in model_candidates:
-        # 💡 [핵심 수정] v1beta를 v1으로 바꿉니다!
-        # 어떤 계정은 v1beta가 아니라 v1에서만 모델이 열려있기도 하거든요.
-        url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
-
+    for attempt in range(MAX_RETRIES):
         try:
-            print(f"🔍 [v1 정식주소] {model_name} 모델로 시도 중...")
-            response = requests.post(url, headers=headers, json=payload, timeout=10)
-
-            if not response.text:
-                continue
-
-            result = response.json()
-
-            if response.status_code == 200:
-                answer = result['candidates'][0]['content']['parts'][0]['text']
-                print(f"✅ {model_name} 연결 성공!")
-                return jsonify({"answer": answer})
-
-            elif response.status_code == 404:
-                print(f"❌ {model_name}은(는) 이 주소에 없대요.")
-                continue
-
-            elif response.status_code == 429:
-                return jsonify({"answer": "아으... 진짜 질문이 너무 많아! 잠시만 쉬었다 오라고!"})
+            # 2.5-flash 모델 호출
+            response = client_gemini.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            return jsonify({"answer": response.text})
 
         except Exception as e:
-            # json 해석 에러 등이 나면 여기로 옵니다.
-            print(f"🔥 {model_name} 시도 중 에러 발생: {str(e)}")
-            continue
+            error_str = str(e)
 
-    # 모든 시도가 실패했을 때
-    return jsonify({"answer": "흥, 구글이 끝까지 문을 안 열어주네... 조금만 이따가 다시 괴롭혀봐!"})
+            # --- [에러별 캬루의 맞춤 메시지] ---
+            # 1. 할당량 초과 (토큰 다 씀 / 429 에러)
+            if "429" in error_str:
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+                return jsonify({"answer": "아으... 너 오늘 질문 너무 많이 하는 거 아냐? 내 머릿속이 꽉 찼단 말이야! 1분만 쉬었다가 다시 물어보러 오라고! 흥! 만약에 이게 반복되면 내일해봐! 오늘 할당량 다 채웠으니까!"})
+
+            # 2. 서버 과부하 (오버로드 / 503 혹은 426 에러)
+            elif "503" in error_str or "overloaded" in error_str.lower():
+                return jsonify({"answer": "지금 서버가 삐걱거리고 있어! 나도 지금 정신이 하나도 없거든? 조금만 이따가 다시 불러줘!"})
+
+            # 3. 그 외 기타 에러
+            print(f"❌ 오류 발생: {error_str}")
+            return jsonify({"answer": f"흥, 서버가 삐걱거리는 것 같아... 대체 뭘 건드린 거야? ({error_str})"})
 
 
 @app.route("/")
