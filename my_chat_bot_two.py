@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, request, jsonify, render_template
-from google import genai  # 랜더에서는 최신 라이브러리가 잘 돌아갑니다!
+from google import genai
 from google.genai import types
 import os
 
 app = Flask(__name__)
 
-# 1. 환경 변수에서 API 키 로드 (랜더 설정 창에 넣을 이름)
+# 1. 환경 변수에서 API 키 로드
 GEMINI_API_KEY = os.environ.get('MY_GEMINI_KEY')
 
-# 2. Gemini 클라이언트 초기화 (최신 방식)
-client_gemini = genai.Client(api_key=GEMINI_API_KEY)
+# 2. Gemini 클라이언트 초기화 (v1 정식 버전 주소로 강제 지정!)
+# 이 설정이 404 v1beta 에러를 막아주는 핵심 열쇠입니다.
+client_gemini = genai.Client(
+    api_key=GEMINI_API_KEY,
+    http_options={'api_version': 'v1'}
+)
 
 # 3. 캬루의 성격(시스템 프롬프트)
 KYARU_SYSTEM_PROMPT = """
@@ -28,7 +32,7 @@ def ask_kyaru():
     nickname = data.get("nickname", "초록자두")
 
     try:
-        # 랜더(최신 환경)에서는 이 모델명이 가장 잘 작동합니다!
+        # 모델명은 가장 안정적인 gemini-1.5-flash를 사용합니다.
         response = client_gemini.models.generate_content(
             model="gemini-1.5-flash",
             contents=[f"사용자 {nickname}의 질문: {user_input}"],
@@ -40,6 +44,7 @@ def ask_kyaru():
 
     except Exception as e:
         print(f"!!! 에러: {e}")
+        # 에러 메시지를 캬루 말투로 출력합니다.
         return jsonify({"answer": f"흥, 서버가 아픈 이유는 이거야: {str(e)}"})
 
 @app.route("/")
