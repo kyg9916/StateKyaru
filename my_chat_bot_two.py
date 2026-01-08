@@ -39,22 +39,20 @@ def ask_kyaru():
 
     # 2. 모델 후보군을 하나씩 찔러봅니다.
     for model_name in model_candidates:
-        # 💡 여기가 핵심! 주소에 models/ 를 직접 넣고, 뒤에 이름만 붙입니다.
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
+        # 💡 [핵심 수정] v1beta를 v1으로 바꿉니다!
+        # 어떤 계정은 v1beta가 아니라 v1에서만 모델이 열려있기도 하거든요.
+        url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
 
         try:
-            print(f"🔍 {model_name} 모델로 시도 중...")
+            print(f"🔍 [v1 정식주소] {model_name} 모델로 시도 중...")
             response = requests.post(url, headers=headers, json=payload, timeout=10)
 
-            # 응답이 비어있는지 확인 (에러 방지)
             if not response.text:
-                print(f"❌ {model_name} 응답이 비어있음")
                 continue
 
             result = response.json()
 
             if response.status_code == 200:
-                # 성공하면 바로 텍스트 반환!
                 answer = result['candidates'][0]['content']['parts'][0]['text']
                 print(f"✅ {model_name} 연결 성공!")
                 return jsonify({"answer": answer})
