@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <head>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <meta charset="UTF-8">
 <title>상태알라미 v6.7</title>
 <style>
@@ -303,6 +303,7 @@
 
 <script>
 let countdownInterval;
+let myChart = null;
 const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1458597916955381800/FjIDySDIfP-kZp1udUCL7o6pQN0pv7yJyz0KLiYcLrEm6FyrK10Z5Z9XJnNN0JpRGpxf";
 // 테스트용 https://discord.com/api/webhooks/1458643194270056489/Ec0iQFL8m-sCdPC7AI29wqq0Cq_LDiLeI8Z5Rsp0Yrh7UEY8ysftSdEF-NeYdKkTQBBp
 // 실제 https://discord.com/api/webhooks/1458597916955381800/FjIDySDIfP-kZp1udUCL7o6pQN0pv7yJyz0KLiYcLrEm6FyrK10Z5Z9XJnNN0JpRGpxf
@@ -433,6 +434,7 @@ function send(action, statusName) {
 
     // 저장 및 타이머 실행
     if (action !== 'back') {
+        updateStatistics(statusName);
         const expireTime = returnTime ? Date.now() + (returnTime * 60000) : null;
         localStorage.setItem('currentStatus', JSON.stringify({ nickname, icon: info.icon, statusName, expireTime }));
         if (returnTime) {
@@ -627,29 +629,42 @@ window.onclick = function(event) {
     }
 }
 
-    let myChart = null;
-
+// 1. 모달 열기
 function openStatsModal() {
-    document.getElementById('statsModal').style.display = 'block';
-    drawChart();
+    const modal = document.getElementById('statsModal');
+    if (modal) {
+        modal.style.display = 'block';
+        // 모달이 완전히 화면에 나타난 뒤 그래프를 그리도록 0.1초 뒤 실행
+        setTimeout(drawChart, 100);
+    }
 }
 
+// 2. 모달 닫기 (이 부분이 없거나 이름이 틀려서 에러가 났던 거야!)
 function closeStatsModal() {
-    document.getElementById('statsModal').style.display = 'none';
+    const modal = document.getElementById('statsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
+// 3. 그래프 그리기
 function drawChart() {
     const stats = JSON.parse(localStorage.getItem('statusStats') || '{}');
     const labels = Object.keys(stats);
     const data = Object.values(stats);
 
-    const ctx = document.getElementById('statsChart').getContext('2d');
+    const canvas = document.getElementById('statsChart');
+    if (!canvas) return;
 
-    // 이미 차트가 있으면 삭제하고 새로 그리기 (중복 방지)
-    if (myChart) { myChart.destroy(); }
+    const ctx = canvas.getContext('2d');
+
+    // 이미 그려진 차트가 있다면 파괴하고 새로 생성 (중복 방지)
+    if (myChart !== null) {
+        myChart.destroy();
+    }
 
     myChart = new Chart(ctx, {
-        type: 'bar', // 'pie'로 바꾸면 파이 차트가 됩니다!
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
@@ -661,8 +676,12 @@ function drawChart() {
             }]
         },
         options: {
+            responsive: true,
             scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
             }
         }
     });
