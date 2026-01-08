@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <head>
 <meta charset="UTF-8">
 <title>상태알라미 v6.7</title>
@@ -130,7 +131,11 @@
 <button class="theme-btn" onclick="toggleTheme()">🌓</button>
 
 <div class="header-area">
-    <h1>📡 디스코드 상태알라미 v6.7 <button class="guide-btn" onclick="openModal()">사용 가이드 📖</button></h1>
+    <h1>
+    📡 디스코드 상태알라미 v6.7
+    <button class="guide-btn" onclick="openModal()">사용 가이드 📖</button>
+    <button class="guide-btn" style="border-color: #2ecc71; color: #2ecc71;" onclick="openStatsModal()">통계 보기 📊</button>
+</h1>
     <div class="developer">Developer by. 김윤겸</div>
 </div>
 
@@ -164,6 +169,22 @@
 
         <div style="text-align: center; margin-top: 25px;">
             <button class="btn-primary" onclick="closeModal()" style="width: 100%;">알았어, 캬루쨩! (닫기)</button>
+        </div>
+    </div>
+</div>
+
+<div id="statsModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeStatsModal()">&times;</span>
+        <h2>📊 내 상태 사용 통계</h2>
+        <p style="font-size: 0.8rem; color: #888;">지금까지 네가 가장 많이 선택한 상태들이야!</p>
+
+        <div style="width: 100%; margin-top: 20px;">
+            <canvas id="statsChart"></canvas>
+        </div>
+
+        <div style="text-align: center; margin-top: 25px;">
+            <button class="btn-primary" onclick="closeStatsModal()" style="width: 100%;">확인했어!</button>
         </div>
     </div>
 </div>
@@ -336,16 +357,6 @@ function getActionMessage(action, customText = "") {
 
 let isProcessingBack = false; // 복귀 처리가 진행 중인지 확인하는 변수
 
-// 🚀 상태 전송 메인 함수 (Embed 적용)
-초록자두님, send 함수를 아주 깔끔하게 다듬어 드릴게요!
-
-우리가 정한 규칙은 **"이미 무언가 하고 있으면 다른 버튼을 못 누르게 막는다"**입니다. 이 로직을 send 함수 맨 윗부분에 넣어서, 조건이 안 맞으면 아예 함수가 실행되지 않고 튕겨 나가게 만들면 됩니다.
-
-아래 코드를 그대로 복사해서 send 함수 부분에 덮어쓰기 하세요!
-
-🛠️ 중복 방지 로직이 추가된 send 함수
-JavaScript
-
 function send(action, statusName) {
     const nickname = document.getElementById('nickname').value.trim();
     if (!nickname) { alert("닉네임을 입력해주세요!"); return; }
@@ -443,6 +454,17 @@ function updateUI(nickname, icon, statusName, timestamp, msg) {
         <small style="font-size: 0.85rem; color: #777;">(${msg})</small>
     `;
     addHistoryItem(nickname, msg, timestamp);
+}
+
+function updateStatistics(statusName) {
+    let stats = JSON.parse(localStorage.getItem('statusStats') || '{}');
+    stats[statusName] = (stats[statusName] || 0) + 1;
+    localStorage.setItem('statusStats', JSON.stringify(stats));
+}
+
+// 기존 send 함수 안에서 호출 (action이 'back'이 아닐 때만 저장하는 걸 추천!)
+if (action !== 'back') {
+    updateStatistics(statusName);
 }
 
 function addHistoryItem(nickname, msg, timestamp) {
@@ -604,6 +626,49 @@ window.onclick = function(event) {
         modal.style.display = 'none';
     }
 }
+
+    let myChart = null;
+
+function openStatsModal() {
+    document.getElementById('statsModal').style.display = 'block';
+    drawChart();
+}
+
+function closeStatsModal() {
+    document.getElementById('statsModal').style.display = 'none';
+}
+
+function drawChart() {
+    const stats = JSON.parse(localStorage.getItem('statusStats') || '{}');
+    const labels = Object.keys(stats);
+    const data = Object.values(stats);
+
+    const ctx = document.getElementById('statsChart').getContext('2d');
+
+    // 이미 차트가 있으면 삭제하고 새로 그리기 (중복 방지)
+    if (myChart) { myChart.destroy(); }
+
+    myChart = new Chart(ctx, {
+        type: 'bar', // 'pie'로 바꾸면 파이 차트가 됩니다!
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '사용 횟수',
+                data: data,
+                backgroundColor: 'rgba(88, 101, 242, 0.5)',
+                borderColor: 'rgba(88, 101, 242, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+}
+
+
 
 </script>
 </body>
