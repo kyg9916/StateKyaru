@@ -27,82 +27,52 @@ def ask_kyaru():
 
     prompt = f"{KYARU_SYSTEM_PROMPT}\n\n사용자 이름: {nickname}\n질문: {user_input}"
 
-    # 💡 [필살기] 구글이 좋아하는 모든 모델 이름을 리스트로 만듭니다.
-    # v1과 v1beta 주소 모두에서 잘 작동하는 이름들입니다.
+    # 1. 모델 후보군을 아주 깨끗한 이름으로만 준비합니다. (models/ 를 뺍니다!)
     model_candidates = [
         "gemini-1.5-flash",
         "gemini-1.5-pro",
-        "gemini-1.0-pro",
-        "models/gemini-1.5-flash",
-        "models/gemini-1.5-pro",
-        "models/gemini-1.0-pro"
+        "gemini-1.0-pro"
     ]
 
     headers = {'Content-Type': 'application/json'}
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
-    # 모델 후보군을 하나씩 다 찔러봅니다!
+    # 2. 모델 후보군을 하나씩 찔러봅니다.
     for model_name in model_candidates:
-        # 주소를 v1beta로 고정해서 가장 넓은 범위를 탐색합니다.
+        # 💡 여기가 핵심! 주소에 models/ 를 직접 넣고, 뒤에 이름만 붙입니다.
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
 
         try:
             print(f"🔍 {model_name} 모델로 시도 중...")
             response = requests.post(url, headers=headers, json=payload, timeout=10)
+
+            # 응답이 비어있는지 확인 (에러 방지)
+            if not response.text:
+                print(f"❌ {model_name} 응답이 비어있음")
+                continue
+
             result = response.json()
 
             if response.status_code == 200:
+                # 성공하면 바로 텍스트 반환!
                 answer = result['candidates'][0]['content']['parts'][0]['text']
-                print(f"✅ {model_name} 모델 연결 성공!")
+                print(f"✅ {model_name} 연결 성공!")
                 return jsonify({"answer": answer})
 
-            # 만약 404 에러(못 찾음)라면 다음 모델 이름으로 넘어갑니다.
             elif response.status_code == 404:
-                print(f"❌ {model_name}은(는) 없대요. 다음 모델로!")
+                print(f"❌ {model_name}은(는) 이 주소에 없대요.")
                 continue
 
-            # 한도 초과(429) 시 잠시 대기
             elif response.status_code == 429:
                 return jsonify({"answer": "아으... 진짜 질문이 너무 많아! 잠시만 쉬었다 오라고!"})
 
         except Exception as e:
-            print(f"🔥 에러 발생: {str(e)}")
+            # json 해석 에러 등이 나면 여기로 옵니다.
+            print(f"🔥 {model_name} 시도 중 에러 발생: {str(e)}")
             continue
 
-    # 모든 모델이 다 실패했을 때 (이럴 일은 거의 없습니다!)
-    return jsonify({"answer": "흥, 구글이 문을 다 잠갔나 봐... 모델이 하나도 안 보여! 좀 이따 다시 해보자!"})
-
-    MAX_RETRIES = 3
-    delay = 1
-
-    for attempt in range(MAX_RETRIES):
-        try:
-            # 구글 서버에 직접 포스트(POST)를 보냅니다.
-            response = requests.post(url, headers=headers, json=payload)
-            result = response.json()
-
-            # 성공적으로 답변을 가져왔을 때
-            if response.status_code == 200:
-                answer = result['candidates'][0]['content']['parts'][0]['text']
-                return jsonify({"answer": answer})
-
-            # 429 에러(한도 초과) 처리
-            elif response.status_code == 429:
-                if attempt < MAX_RETRIES - 1:
-                    print(f"⚠️ 한도 초과! {delay}초 뒤 다시 시도...")
-                    time.sleep(delay)
-                    delay *= 2
-                    continue
-                return jsonify({"answer": "아으... 진짜 질문이 너무 많아! 1분만 있다가 다시 와!"})
-
-            # 그 외 에러
-            else:
-                error_msg = result.get('error', {}).get('message', '알 수 없는 에러')
-                return jsonify({"answer": f"흥, 서버가 삐걱거려! ({error_msg})"})
-
-        except Exception as e:
-            print(f"❌ 오류 발생: {str(e)}")
-            return jsonify({"answer": f"흥, 연결이 안 되잖아! ({str(e)})"})
+    # 모든 시도가 실패했을 때
+    return jsonify({"answer": "흥, 구글이 끝까지 문을 안 열어주네... 조금만 이따가 다시 괴롭혀봐!"})
 
 
 @app.route("/")
