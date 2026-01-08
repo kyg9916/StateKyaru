@@ -35,7 +35,7 @@ def ask_kyaru():
     for attempt in range(MAX_RETRIES):
         try:
             response = client_gemini.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 contents=prompt
             )
             # 성공하면 바로 답변 반환!
