@@ -337,21 +337,39 @@ function getActionMessage(action, customText = "") {
 let isProcessingBack = false; // 복귀 처리가 진행 중인지 확인하는 변수
 
 // 🚀 상태 전송 메인 함수 (Embed 적용)
+초록자두님, send 함수를 아주 깔끔하게 다듬어 드릴게요!
+
+우리가 정한 규칙은 **"이미 무언가 하고 있으면 다른 버튼을 못 누르게 막는다"**입니다. 이 로직을 send 함수 맨 윗부분에 넣어서, 조건이 안 맞으면 아예 함수가 실행되지 않고 튕겨 나가게 만들면 됩니다.
+
+아래 코드를 그대로 복사해서 send 함수 부분에 덮어쓰기 하세요!
+
+🛠️ 중복 방지 로직이 추가된 send 함수
+JavaScript
+
 function send(action, statusName) {
     const nickname = document.getElementById('nickname').value.trim();
-    const returnTimeValue = document.getElementById('return-time').value.trim();
-    const returnTime = returnTimeValue ? parseInt(returnTimeValue) : null;
     if (!nickname) { alert("닉네임을 입력해주세요!"); return; }
 
-    // [추가] 복귀 중복 방지 로직
-    if (action === 'back') {
-        if (isProcessingBack) return; // 이미 복귀 처리 중이면 함수 종료
-        isProcessingBack = true;
+    // --- 🚨 [추가] 중복 상태 방지 로직 ---
+    // '복귀(back)' 버튼이 아닌 다른 버튼을 눌렀을 때, 이미 데이터가 있으면 차단!
+    const currentData = localStorage.getItem('currentStatus');
+    if (action !== 'back' && currentData) {
+        const statusObj = JSON.parse(currentData);
+        alert(`🐱 캬루: 야! 너 지금 이미 [${statusObj.statusName}] 중이잖아!\n하나라도 제대로 끝내고 다른 걸 하란 말이야! 흥!\n(바꾸고 싶으면 '복귀하기' 버튼을 먼저 눌러!)`);
+        return; // 여기서 함수를 끝내서 아래 코드가 실행되지 않게 합니다.
+    }
 
-        // 3초 뒤에 다시 복귀 버튼을 누를 수 있게 초기화 (도배 방지)
+    const returnTimeValue = document.getElementById('return-time').value.trim();
+    const returnTime = returnTimeValue ? parseInt(returnTimeValue) : null;
+
+    // [추가] 복귀 중복 방지 로직 (기존 유지)
+    if (action === 'back') {
+        if (isProcessingBack) return;
+        isProcessingBack = true;
         setTimeout(() => { isProcessingBack = false; }, 3000);
     }
 
+    // 타이머 및 화면 초기화
     clearInterval(countdownInterval);
     document.getElementById('countdown-display').style.display = "none";
 
@@ -371,29 +389,28 @@ function send(action, statusName) {
     const statusMsg = getActionMessage(action, statusName);
     const timestamp = getNowFormatted();
 
-    // --- 💡 예상 복귀 시각 계산 로직 추가 ---
+    // 예상 복귀 시각 계산
     let estimatedReturnMsg = "즉시/없음";
     if (action !== 'back' && returnTime) {
         const now = new Date();
-        now.setMinutes(now.getMinutes() + returnTime); // 현재 시간에 '입력한 분'을 더함
+        now.setMinutes(now.getMinutes() + returnTime);
         const hour = String(now.getHours()).padStart(2, '0');
         const min = String(now.getMinutes()).padStart(2, '0');
         estimatedReturnMsg = `${returnTime}분 후 (${hour}:${min} 예정)`;
     }
-    // ---------------------------------------
 
+    // 디스코드 전송 데이터
     const embedData = {
-    embeds: [{
-        title: `${info.icon} ${nickname}님의 상태`,
-        color: info.color,
-        description: `${statusMsg}`, // 👈 이미 여기서 "고통받는 중이에요!"라고 나오니까요.
-        fields: [
-            // "현재 상태" 필드를 삭제했습니다.
-            { name: "복귀 예정 시각", value: estimatedReturnMsg, inline: false }
-        ],
-        footer: { text: `발생 시각: ${timestamp}` }
-    }]
-};
+        embeds: [{
+            title: `${info.icon} ${nickname}님의 상태`,
+            color: info.color,
+            description: `${statusMsg}`,
+            fields: [
+                { name: "복귀 예정 시각", value: estimatedReturnMsg, inline: false }
+            ],
+            footer: { text: `발생 시각: ${timestamp}` }
+        }]
+    };
 
     fetch(DISCORD_WEBHOOK, {
         method: "POST",
@@ -403,7 +420,7 @@ function send(action, statusName) {
 
     updateUI(nickname, info.icon, statusName, timestamp, statusMsg);
 
-    // 저장 및 타이머 로직 (기존과 동일)
+    // 저장 및 타이머 실행
     if (action !== 'back') {
         const expireTime = returnTime ? Date.now() + (returnTime * 60000) : null;
         localStorage.setItem('currentStatus', JSON.stringify({ nickname, icon: info.icon, statusName, expireTime }));
