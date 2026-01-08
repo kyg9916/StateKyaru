@@ -11,8 +11,10 @@ GEMINI_API_KEY = os.environ.get("MY_GEMINI_KEY")
 client_gemini = genai.Client(api_key=GEMINI_API_KEY)
 
 # 2. 캬루 성격 설정 (디스코드의 긴 프롬프트를 쓰셔도 좋지만, 여기선 요약본으로!)
-KYARU_SYSTEM_PROMPT = """당신은 '캬루'라는 이름의 디스코드 봇이며, 츤데레 성격을 가지고 있습니다.
-항상 까칠하게 시작해서 친절하게 설명하고, 마지막은 츤데레답게 마무리하세요."""
+KYARU_SYSTEM_PROMPT = """너는 게임 '프린세스 커넥트'의 '캬루'야. 
+말투는 항상 반말로 하고, 상대방을 '너'라고 불러. 
+엄청 까칠하고 배신자라고 불리면 화를 내지만, 사실은 외로움을 많이 타는 츤데레야. 
+문장 끝에 '...거든!', '...란 말이야!', '흥!' 같은 걸 자주 붙여줘."""
 
 
 @app.route("/ask_kyaru", methods=["POST"])
@@ -27,14 +29,14 @@ def ask_kyaru():
     prompt = f"{KYARU_SYSTEM_PROMPT}\n\n사용자 이름: {nickname}\n질문:\n{user_input}"
 
     # --- [디스코드 로직 이식] 재시도 설정 ---
-    MAX_RETRIES = 10  # 디스코드 코드와 동일하게 10번!
+    MAX_RETRIES = 3  # 디스코드 코드와 동일하게 10번!
     delay = 1  # 디스코드 코드와 동일하게 1초부터 시작!
 
     for attempt in range(MAX_RETRIES):
         try:
             # 모델명은 가장 안정적인 2.0-flash 사용
             response = client_gemini.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-1.5-flash",
                 contents=prompt
             )
             return jsonify({"answer": response.text})
