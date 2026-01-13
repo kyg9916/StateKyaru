@@ -86,14 +86,22 @@ def resolve_steam_id(input_id):
 
 def get_steam_data(steam_id):
     url = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
-    params = {'key': STEAM_API_KEY, 'steamid': steam_id, 'format': 'json', 'include_appinfo': True,
-              'include_played_free_games': True}
+    params = {
+        'key': STEAM_API_KEY,
+        'steamid': steam_id,
+        'format': 'json',
+        'include_appinfo': True,
+        'include_played_free_games': True
+    }
     try:
         response = requests.get(url, params=params)
         data = response.json()
         if 'games' not in data['response']: return None
 
         games = data['response']['games']
+        total_count = len(games)
+
+        # 기본 데이터 가공
         for game in games:
             game['playtime_hours'] = round(game['playtime_forever'] / 60, 1)
             last_time = game.get('rtime_last_played', 0)
@@ -101,20 +109,45 @@ def get_steam_data(steam_id):
                 '%Y-%m-%d') if last_time > 0 else "기록 없음"
             game['img_url'] = f"https://cdn.akamai.steamstatic.com/steam/apps/{game['appid']}/header.jpg"
 
+        # 1. 플레이 시간순 정렬 (상위 10개는 차트용)
         most_played = sorted(games, key=lambda x: x['playtime_forever'], reverse=True)
+
+        # 2. 최근 플레이 순 정렬 (TOP 10)
+        last_played = sorted(games, key=lambda x: x.get('rtime_last_played', 0), reverse=True)[:10]
+
+        # 3. 안 해본 게임 (플레이 시간 0)
+        never_played = [g for g in games if g['playtime_forever'] == 0]
+        never_played_count = len(never_played)
+
+        # 4. 통계 계산
         played_games = [g for g in games if g['playtime_forever'] > 0]
+        played_count = len(played_games)
         total_playtime = sum(g['playtime_hours'] for g in games)
+
+        # 평균 시간 및 완료율(실행율) 계산
+        avg_hours = round(total_playtime / played_count, 1) if played_count > 0 else 0
+        completion_rate = round((played_count / total_count) * 100, 1) if total_count > 0 else 0
 
         return {
             'most_played': most_played,
+            'last_played': last_played,  # 템플릿에서 사용
+            'never_played': never_played,  # 템플릿에서 사용
             'summary': {
-                'total_count': len(games), 'played_count': len(played_games),
-                'total_hours': round(total_playtime, 1)
+                'total_count': total_count,
+                'played_count': played_count,
+                'never_played_count': never_played_count,  # 템플릿에서 사용
+                'total_hours': round(total_playtime, 1),
+                'avg_hours': avg_hours,  # 템플릿에서 사용
+                'completion_rate': completion_rate  # 에러 발생했던 지점!
             },
             'chart_most_played_labels': [g['name'] for g in most_played[:10]],
             'chart_most_played_data': [g['playtime_hours'] for g in most_played[:10]],
+            # 차트용 데이터 (월별 데이터는 API 한계상 가상 데이터나 추가 구현 필요)
+            'chart_recent_play_labels': ["1월", "2월", "3월", "4월", "5월", "6월"],
+            'chart_recent_play_data': [10, 20, 15, 30, 25, 40]
         }
-    except:
+    except Exception as e:
+        print(f"Error: {e}")
         return None
 
 
