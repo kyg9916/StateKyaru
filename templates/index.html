@@ -221,10 +221,22 @@ const AFK_TIMEOUT = 60 * 60 * 1000;
 const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1458597916955381800/FjIDySDIfP-kZp1udUCL7o6pQN0pv7yJyz0KLiYcLrEm6FyrK10Z5Z9XJnNN0JpRGpxf";
 // 테스트용 https://discord.com/api/webhooks/1458643194270056489/Ec0iQFL8m-sCdPC7AI29wqq0Cq_LDiLeI8Z5Rsp0Yrh7UEY8ysftSdEF-NeYdKkTQBBp
 window.onload = function() {
+    // 1. 저장된 닉네임 불러오기
     const savedName = localStorage.getItem('userNickname');
-    if (savedName) document.getElementById('nickname').value = savedName;
-    if (Notification.permission !== 'granted') Notification.requestPermission();
+    if (savedName) {
+        document.getElementById('nickname').value = savedName;
+    }
+
+    // 2. 알림 권한 확인
+    if (Notification.permission !== 'granted') {
+        Notification.requestPermission();
+    }
+
+    // 3. 기존에 설정된 상태(타이머 등) 복원
     restoreStatus();
+
+    // 4. 통계 데이터가 있는지 확인하고 로그 찍어보기 (디버깅용)
+    console.log("현재 저장된 통계:", localStorage.getItem('statusStats'));
 };
 
 function saveNickname() { localStorage.setItem('userNickname', document.getElementById('nickname').value); }
@@ -412,8 +424,13 @@ function sendDirectMsg() {
     addHistoryItem(nick, `💬 ${msg}`, getNowFormatted());
 }
 function updateStatistics(name) {
+    // 기존 데이터를 가져오되, 없으면 빈 객체({})를 만듭니다.
     let stats = JSON.parse(localStorage.getItem('statusStats') || '{}');
+
+    // 해당 상태의 횟수를 1 올립니다.
     stats[name] = (stats[name] || 0) + 1;
+
+    // 다시 '문자열'로 바꿔서 저장합니다.
     localStorage.setItem('statusStats', JSON.stringify(stats));
 }
 function restoreStatus() {
