@@ -59,13 +59,18 @@
     50% { transform: translateX(10px); }
     75% { transform: translateX(-10px); }
 }
+
+        .btn-mute { background-color: #7f8c8d !important; }
+.btn-mute.off { background-color: #c0392b !important; }
     </style>
 </head>
 <body>
+<audio id="bgm" src="{{ url_for('static', filename='music.mp3') }}" loop></audio>
 
 <div class="top-nav">
     <a href="/" class="btn-nav">🏠 메인으로</a>
     <button class="btn-nav" onclick="toggleModal(true)">📖 아이템 도감</button>
+    <button id="btn-mute" class="btn-nav btn-mute" onclick="toggleMute()">🔊 소리 끔</button>
 </div>
 
 <div id="game-container">
@@ -114,6 +119,10 @@
 </div>
 
 <script>
+
+    const bgm = document.getElementById('bgm');
+let isMuted = false;
+
 const ITEM_INFO = {
     "확대경": "다음 탄환이 실탄(🔴)인지 공포탄(⚪)인지 확인합니다.",
     "수갑": "상대방의 다음 턴을 건너뛰게 합니다.",
@@ -171,7 +180,31 @@ function fillItemModal() {
         container.innerHTML += `<div class="item-name-tag">${name}</div><div>${desc}</div>`;
     }
 }
-function startGame() { document.getElementById('start-overlay').style.display = 'none'; initWave(1); log("게임을 시작합니다."); }
+function startGame() {
+    document.getElementById('start-overlay').style.display = 'none';
+
+    // 볼륨 설정 및 재생 시도
+    bgm.volume = 0.5; // 50% 볼륨
+    bgm.play().then(() => {
+        console.log("BGM 재생 시작");
+    }).catch(e => {
+        console.error("재생 실패:", e);
+    });
+
+    initWave(1);
+    log("게임을 시작합니다.");
+}
+
+// 음소거 토글 함수 (HTML에 버튼 추가 시 사용)
+function toggleMute() {
+    isMuted = !isMuted;
+    bgm.muted = isMuted;
+    const btn = document.getElementById('btn-mute');
+    if(btn) {
+        btn.innerText = isMuted ? "🔇 소리 켬" : "🔊 소리 끔";
+        btn.classList.toggle('off');
+    }
+}
 function log(msg, type = "") {
     const win = document.getElementById('log-window');
     const div = document.createElement('div');
