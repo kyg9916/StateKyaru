@@ -221,23 +221,24 @@ const AFK_TIMEOUT = 60 * 60 * 1000;
 const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1458597916955381800/FjIDySDIfP-kZp1udUCL7o6pQN0pv7yJyz0KLiYcLrEm6FyrK10Z5Z9XJnNN0JpRGpxf";
 // 테스트용 https://discord.com/api/webhooks/1458643194270056489/Ec0iQFL8m-sCdPC7AI29wqq0Cq_LDiLeI8Z5Rsp0Yrh7UEY8ysftSdEF-NeYdKkTQBBp
 window.onload = function() {
-    // 1. 저장된 닉네임 불러오기
+    // 저장된 닉네임 불러오기
     const savedName = localStorage.getItem('userNickname');
     if (savedName) {
         document.getElementById('nickname').value = savedName;
     }
 
-    // 2. 알림 권한 확인
-    if (Notification.permission !== 'granted') {
-        Notification.requestPermission();
-    }
+    // 알림 권한 (이건 그대로 두세요)
+    if (Notification.permission !== 'granted') Notification.requestPermission();
 
-    // 3. 기존에 설정된 상태(타이머 등) 복원
+    // 상태 복원
     restoreStatus();
-
-    // 4. 통계 데이터가 있는지 확인하고 로그 찍어보기 (디버깅용)
-    console.log("현재 저장된 통계:", localStorage.getItem('statusStats'));
 };
+
+// 닉네임 입력할 때마다 바로바로 저장하기
+function saveNickname() {
+    const nick = document.getElementById('nickname').value;
+    localStorage.setItem('userNickname', nick);
+}
 
 function saveNickname() { localStorage.setItem('userNickname', document.getElementById('nickname').value); }
 function toggleTheme() { document.body.classList.toggle('dark-mode'); }
@@ -424,14 +425,18 @@ function sendDirectMsg() {
     addHistoryItem(nick, `💬 ${msg}`, getNowFormatted());
 }
 function updateStatistics(name) {
-    // 기존 데이터를 가져오되, 없으면 빈 객체({})를 만듭니다.
+    // 1. 기존 데이터를 가져오고, 없으면 빈 객체{}를 기본값으로 설정
     let stats = JSON.parse(localStorage.getItem('statusStats') || '{}');
 
-    // 해당 상태의 횟수를 1 올립니다.
+    // 2. 만약 stats가 어떤 이유로 null이면 다시 빈 객체로 초기화
+    if (!stats) stats = {};
+
+    // 3. 횟수 추가
     stats[name] = (stats[name] || 0) + 1;
 
-    // 다시 '문자열'로 바꿔서 저장합니다.
+    // 4. 저장
     localStorage.setItem('statusStats', JSON.stringify(stats));
+    console.log("통계가 업데이트됨:", stats);
 }
 function restoreStatus() {
     const data = localStorage.getItem('currentStatus');
@@ -503,7 +508,46 @@ function drawChart() {
     if (myChart) myChart.destroy();
     myChart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(stats), datasets: [{ label: '횟수', data: Object.values(stats), backgroundColor: '#5865F2' }] } });
 }
-async function askKyaru() { /* 캬루 API 로직 생략(기존 유지) */ }
+async function askKyaru() {
+    const input = document.getElementById('kyaru-input');
+    const msg = input.value.trim();
+    const nick = document.getElementById('nickname').value || "초록자두"; // 닉네임 없으면 기본값
+
+    const loadingDiv = document.getElementById('kyaru-loading');
+    const responseDiv = document.getElementById('kyaru-response');
+    const responseText = document.getElementById('kyaru-text');
+
+    if (!msg) {
+        alert("할 말도 없으면서 부르지 말란 말이야! 흥!");
+        return;
+    }
+
+    // 로딩 표시 시작
+    loadingDiv.style.display = 'block';
+    responseDiv.style.display = 'none';
+
+    try {
+        const response = await fetch("/ask_kyaru", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: msg, nickname: nick })
+        });
+
+        const data = await response.json();
+
+        // 캬루의 답변 출력
+        responseText.innerText = data.answer;
+        loadingDiv.style.display = 'none';
+        responseDiv.style.display = 'block';
+
+        input.value = ""; // 입력창 비우기
+    } catch (error) {
+        console.error("Error:", error);
+        responseText.innerText = "서버가 이상해! 나중에 다시 오라고!";
+        loadingDiv.style.display = 'none';
+        responseDiv.style.display = 'block';
+    }
+}
 </script>
 </body>
 </html>
