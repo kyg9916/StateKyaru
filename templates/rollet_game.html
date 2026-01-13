@@ -47,9 +47,10 @@
         .btn-action:disabled { background: #333 !important; color: #666; }
         .ammo-info { color: #3498db; text-align: center; font-weight: bold; margin: 10px 0; font-size: 18px; }
         @keyframes fadeOut {
-    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    70% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    0% { opacity: 0; transform: translate(-50%, -60%) scale(0.9); }
+    10% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -40%) scale(0.8); }
 }
 
 @keyframes shake {
@@ -114,23 +115,32 @@
 
 <script>
 const ITEM_INFO = {
-    "확대경": "다음 탄환이 실탄(🔴)인지 공포탄(⚪)인지 즉시 확인합니다.",
-    "수갑": "상대방의 다음 턴을 강제로 건너뛰게 만듭니다.",
-    "담배갑": "체력을 1 회복합니다. (최대 체력까지)",
+    "확대경": "다음 탄환이 실탄(🔴)인지 공포탄(⚪)인지 확인합니다.",
+    "수갑": "상대방의 다음 턴을 건너뛰게 합니다.",
+    "담배갑": "체력을 1 회복합니다.",
     "손톱": "탄창의 맨 앞 탄환을 제거합니다.",
     "맥주": "탄창의 맨 뒤 탄환을 제거합니다.",
-    "쇠톱": "다음 사격 시 실탄 대미지가 2배가 됩니다.",
-    "휴대폰": "탄창 속 무작위 탄환 하나의 위치와 종류를 확인합니다.",
-    "약": "50% 확률로 체력 +1, 50% 확률로 체력 -1 (도박!)",
-    "방탄복": "다음 1번의 공격 피해를 완전히 무시합니다.",
-    "주사기": "상대방의 아이템 중 하나를 무작위로 훔쳐옵니다.",
+    "쇠톱": "다음 실탄 대미지가 2배가 됩니다.",
+    "휴대폰": "무작위 탄환 하나의 위치와 종류를 확인합니다.",
+    "약": "50% 확률로 HP +1 또는 HP -1.",
+    "방탄복": "다음 1번의 공격 피해를 무시합니다.",
+    "주사기": "상대방의 아이템을 1개 훔칩니다.",
     "나이프": "상대에게 즉시 1의 피해를 입힙니다.",
-    "동전": "60% 확률로 다음 피해 3배, 40% 확률로 본인 HP -1",
-    "눈알": "자신의 HP를 2 소모하고 무작위 아이템 2개를 받습니다.",
-    "술": "HP 2를 회복하지만, 취해서 다음 턴을 쉽니다.",
-    "미니에어컨": "현재 발사될 탄환의 성질을 반전시킵니다.",
-    "도화선": "현재 탄창의 탄환 순서를 무작위로 섞습니다.",
-    "전기충격기": "상대방의 아이템 중 하나를 무작위로 파괴합니다."
+    "동전": "60% 확률로 대미지 3배, 40% 확률로 본인 HP -1.",
+    "눈알": "HP 2 소모 후 아이템 2개를 얻습니다.",
+    "술": "HP 2 회복 후 다음 턴을 쉽니다.",
+    "미니에어컨": "현재 탄환의 성질을 반전시킵니다.",
+    "전기충격기": "상대방의 아이템 하나를 파괴합니다.",
+    "이상한복권": "50% 확률로 HP -2 또는 HP +2 및 아이템 1개 획득.",
+    "더이상한복권": "5% 즉시 승리, 85% HP -1, 10% HP +2.",
+    "안경": "가장 마지막(맨 뒤) 탄환의 종류를 확인합니다.",
+    "모래시계": "30% 확률로 상대와 HP 교환, 70% 확률로 본인 HP -2.",
+    "저격총": "상대방에게 즉시 2의 고정 피해를 입힙니다.",
+    "트릭박스": "상대방의 무작위 아이템을 다른 아이템으로 변경합니다.",
+    "개머리판": "탄창을 비우고 강제로 다음 장전 단계로 넘어갑니다.",
+    "망원경": "앞으로 발사될 탄환 2개의 종류를 미리 봅니다.",
+    "도둑": "상대방이 입고 있는 방탄복을 즉시 제거합니다.",
+    "부적": "3턴 동안 모든 피해를 1로 고정합니다."
 };
 const ITEM_LIST = Object.keys(ITEM_INFO);
 
@@ -147,16 +157,13 @@ let state = {
     turn: "P", dmg: 1,
     p_skip: false, d_skip: false,
     p_armor: false, d_armor: false,
-    p_charm: false, d_charm: false,
+    p_charm: 0, d_charm: 0,
     known_shot: null
 };
 
-// --- [초기화 및 공통 함수] ---
+// --- [초기화 및 시스템] ---
 
-function toggleModal(show) {
-    document.getElementById('item-modal').style.display = show ? 'block' : 'none';
-}
-
+function toggleModal(show) { document.getElementById('item-modal').style.display = show ? 'block' : 'none'; }
 function fillItemModal() {
     const container = document.getElementById('modal-item-list');
     container.innerHTML = "";
@@ -164,13 +171,7 @@ function fillItemModal() {
         container.innerHTML += `<div class="item-name-tag">${name}</div><div>${desc}</div>`;
     }
 }
-
-function startGame() {
-    document.getElementById('start-overlay').style.display = 'none';
-    initWave(1);
-    log("게임을 시작합니다. 행운을 빕니다.");
-}
-
+function startGame() { document.getElementById('start-overlay').style.display = 'none'; initWave(1); log("게임을 시작합니다."); }
 function log(msg, type = "") {
     const win = document.getElementById('log-window');
     const div = document.createElement('div');
@@ -180,12 +181,50 @@ function log(msg, type = "") {
     win.scrollTop = win.scrollHeight;
 }
 
-// --- [핵심 전투 로직: 사격 연출 및 결과] ---
+// --- [피해 계산 및 턴 로직] ---
+function applyDamage(target, amount) {
+    if(target === "P") {
+        if(state.p_armor) { log("🛡️ PLAYER가 방탄복으로 방어했습니다!"); state.p_armor = false; }
+        else {
+            if(state.p_charm > 0) { amount = Math.min(amount, 1); log("🧿 부적의 힘으로 피해가 감소합니다!"); }
+            state.p_hp -= amount;
+            log(`💔 PLAYER가 ${amount}의 피해를 입었습니다.`, "log-danger");
+        }
+    } else {
+        if(state.d_armor) { log("🛡️ DEALER가 방탄복으로 방어했습니다!"); state.d_armor = false; }
+        else {
+            if(state.d_charm > 0) { amount = Math.min(amount, 1); log("🧿 부적의 힘으로 피해가 감소합니다!"); }
+            state.d_hp -= amount;
+            log(`💢 DEALER가 ${amount}의 피해를 입었습니다.`, "log-important");
+        }
+    }
+    updateUI(); // 대미지 즉시 반영!
+}
+
+function processTurnEnd() {
+    // 부적 카운트 감소 (매 턴 종료 시 무조건 실행)
+    if(state.turn === "P" && state.p_charm > 0) state.p_charm--;
+    else if(state.turn === "D" && state.d_charm > 0) state.d_charm--;
+
+    if(state.turn === "P" && state.p_skip) {
+        log("💤 PLAYER 행동 불능. 턴이 넘어갑니다.");
+        state.p_skip = false;
+        state.turn = "D";
+    } else if(state.turn === "D" && state.d_skip) {
+        log("💤 DEALER 행동 불능. 턴이 넘어갑니다.");
+        state.d_skip = false;
+        state.turn = "P";
+    }
+
+    state.known_shot = null;
+    updateUI();
+    if(!checkGameOver() && state.turn === "D") setTimeout(dealerLogic, 1500);
+}
+
+// --- [핵심 전투] ---
 
 function handleFire(isSelf) {
     if(state.mag.length === 0) return;
-
-    // 사격 중 버튼 잠금 (버그 방지)
     document.getElementById('btn-to-dealer').disabled = true;
     document.getElementById('btn-to-self').disabled = true;
 
@@ -201,125 +240,287 @@ function handleFire(isSelf) {
             showGameAlert(msg, "#ff4d4d");
             log(msg, "log-danger");
             shakeScreen();
-
-            // 대미지 적용 대상 계산
             const targetKey = isSelf ? state.turn : (state.turn === "P" ? "D" : "P");
             applyDamage(targetKey, state.dmg);
-
             state.dmg = 1;
             state.turn = (state.turn === "P") ? "D" : "P";
         } else {
             const msg = `💨 ${shooter} ➔ ${targetName} [공포탄]`;
             showGameAlert(msg, "#3498db");
             log(msg);
-
             state.dmg = 1;
-            // 본인 사격 시 공포탄이면 턴 유지
             if(!isSelf) state.turn = (state.turn === "P") ? "D" : "P";
             else log(`🔄 ${shooter}가 자신에게 쏘아 턴이 유지됩니다.`, "log-important");
         }
-
         processTurnEnd();
     }, 800);
 }
 
-function applyDamage(target, amount) {
-    if(target === "P") {
-        if(state.p_armor) {
-            log("🛡️ PLAYER가 방탄복으로 방어했습니다!");
-            state.p_armor = false;
-        } else {
-            state.p_hp -= amount;
-            log(`💔 PLAYER가 ${amount}의 피해를 입었습니다.`);
+// --- [딜러 AI 및 시스템] ---
+
+async function dealerLogic() {
+    if (state.turn !== "D") return;
+
+    let itemsUsed = 0;
+    // 한 턴에 최대 3개까지 아이템 사용 시도
+    while (itemsUsed < 3 && state.d_items.length > 0) {
+        let chosenIdx = -1;
+        const d_items = state.d_items;
+        const liveRatio = state.mag.length > 0 ? state.mag.filter(x => x).length / state.mag.length : 0;
+
+        // 1순위: 생존 및 방어 (체력이 낮을 때)
+        if (state.d_hp <= 2) {
+            if (d_items.includes("담배갑")) chosenIdx = d_items.indexOf("담배갑");
+            else if (d_items.includes("술")) chosenIdx = d_items.indexOf("술");
+            else if (d_items.includes("모래시계") && state.p_hp > state.d_hp + 1) chosenIdx = d_items.indexOf("모래시계");
+            else if (d_items.includes("이상한복권")) chosenIdx = d_items.indexOf("이상한복권");
         }
-    } else {
-        if(state.d_armor) {
-            log("🛡️ DEALER가 방탄복으로 방어했습니다!");
-            state.d_armor = false;
+
+        // 2순위: 적 방해 및 무력화
+        if (chosenIdx === -1) {
+            if (state.p_armor && d_items.includes("도둑")) chosenIdx = d_items.indexOf("도둑");
+            else if (state.p_items.length > 3 && d_items.includes("전기충격기")) chosenIdx = d_items.indexOf("전기충격기");
+            else if (state.p_items.length > 0 && d_items.includes("주사기")) chosenIdx = d_items.indexOf("주사기");
+            else if (!state.p_skip && d_items.includes("수갑")) chosenIdx = d_items.indexOf("수갑");
+        }
+
+        // 3순위: 직접 타격 (확정 대미지)
+        if (chosenIdx === -1) {
+            if (d_items.includes("저격총")) chosenIdx = d_items.indexOf("저격총");
+            else if (d_items.includes("나이프")) chosenIdx = d_items.indexOf("나이프");
+        }
+
+        // 4순위: 정보 획득 및 탄창 제어
+        if (chosenIdx === -1) {
+            if (state.known_shot === null) {
+                if (d_items.includes("확대경")) chosenIdx = d_items.indexOf("확대경");
+                else if (d_items.includes("휴대폰")) chosenIdx = d_items.indexOf("휴대폰");
+                else if (d_items.includes("망원경")) chosenIdx = d_items.indexOf("망원경");
+            }
+            // 공포탄만 남았을 때 탄창 비우기
+            if (liveRatio === 0 && d_items.includes("개머리판")) chosenIdx = d_items.indexOf("개머리판");
+            if (liveRatio === 0 && d_items.includes("맥주")) chosenIdx = d_items.indexOf("맥주");
+        }
+
+        // 5순위: 공격 강화 (실탄이 확실하거나 확률이 높을 때)
+        if (chosenIdx === -1 && (state.known_shot === true || liveRatio > 0.5)) {
+            if (d_items.includes("쇠톱")) chosenIdx = d_items.indexOf("쇠톱");
+            else if (d_items.includes("동전")) chosenIdx = d_items.indexOf("동전");
+        }
+
+        // 아이템 사용 실행
+        if (chosenIdx !== -1) {
+            useItem(chosenIdx, true);
+            itemsUsed++;
+            await new Promise(r => setTimeout(r, 1000)); // 아이템 사용 간격
+            if (state.mag.length === 0 || state.p_hp <= 0 || state.d_hp <= 0) break;
         } else {
-            state.d_hp -= amount;
-            log(`💢 DEALER가 ${amount}의 피해를 입었습니다.`);
+            break; // 더 이상 쓸 아이템이 없거나 전략적 판단으로 아낌
         }
     }
+
+    // 아이템 사용 후 사격 로직
+    if (state.mag.length > 0 && state.p_hp > 0 && state.d_hp > 0) {
+        let selfShoot = false;
+
+        // 알고 있는 탄환 정보 활용
+        if (state.known_shot !== null) {
+            // 휴대폰 정보(객체) 혹은 확대경 정보(불리언) 처리
+            const isLive = typeof state.known_shot === 'object' ? state.known_shot.type : state.known_shot;
+            const targetIdx = typeof state.known_shot === 'object' ? state.known_shot.idx : 0;
+
+            if (targetIdx === 0) { // 맨 앞 탄환 정보를 알 때
+                selfShoot = !isLive;
+            } else { // 먼 쪽 탄환 정보만 알 때는 확률에 의존
+                selfShoot = (state.mag.filter(x => x).length / state.mag.length) <= 0.3;
+            }
+        } else {
+            // 정보가 없을 땐 실탄 확률이 낮으면 자신에게 사격(턴 유지 전략)
+            selfShoot = (state.mag.filter(x => x).length / state.mag.length) <= 0.33;
+        }
+
+        setTimeout(() => handleFire(selfShoot), 600);
+    }
 }
 
-function processTurnEnd() {
-    // 수갑(턴 건너뛰기) 체크
-    if(state.turn === "P" && state.p_skip) {
-        log("⛓️ PLAYER 수갑 구속! 턴이 넘어갑니다.");
-        state.p_skip = false;
-        state.turn = "D";
-    } else if(state.turn === "D" && state.d_skip) {
-        log("⛓️ DEALER 수갑 구속! 턴이 넘어갑니다.");
-        state.d_skip = false;
-        state.turn = "P";
+function useItem(idx, isDealer = false) {
+    const list = isDealer ? state.d_items : state.p_items;
+    if (!list[idx]) return; // 잘못된 인덱스 방지
+
+    const name = list.splice(idx, 1)[0];
+    const user = isDealer ? "DEALER" : "PLAYER";
+    const target = isDealer ? "P" : "D";
+
+    log(`${user}가 [${name}] 아이템을 사용했습니다.`, "log-important");
+
+    switch(name) {
+        case "확대경":
+            if(!isDealer) alert(`🔍 맨 앞: ${state.mag[0] ? "실탄🔴" : "공포탄⚪"}`);
+            else state.known_shot = state.mag[0];
+            break;
+        case "이상한복권":
+            if(Math.random() < 0.5) {
+                if(isDealer) state.d_hp -= 2; else state.p_hp -= 2;
+                log("💸 복권 꽝! HP -2", "log-danger");
+            } else {
+                if(isDealer) { state.d_hp = Math.min(state.d_max, state.d_hp+2); state.d_items.push(ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)]); }
+                else { state.p_hp = Math.min(state.p_max, state.p_hp+2); state.p_items.push(ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)]); }
+                log("💰 복권 당첨! HP +2 및 아이템 획득");
+            }
+            break;
+        case "더이상한복권":
+            let r = Math.random();
+            if(r < 0.05) { log("🎰 즉시 승리!", "log-important"); if(isDealer) state.p_hp=0; else state.d_hp=0; }
+            else if(r < 0.15) { if(isDealer) state.d_hp=Math.min(state.d_max, state.d_hp+2); else state.p_hp=Math.min(state.p_max, state.p_hp+2); log("🍀 HP +2"); }
+            else { if(isDealer) state.d_hp--; else state.p_hp--; log("💀 HP -1", "log-danger"); }
+            break;
+        case "부적":
+            if(isDealer) state.d_charm = 3; else state.p_charm = 3;
+            log(`🧿 ${user}에게 3턴간 부적의 보호가 적용됩니다.`);
+            break;
+        case "저격총": applyDamage(target, 2); break;
+        case "도둑":
+            if(isDealer) { if(state.p_armor) { state.p_armor = false; log("👤 PLAYER 방탄복 파괴!"); } }
+            else { if(state.d_armor) { state.d_armor = false; log("👤 DEALER 방탄복 파괴!"); } }
+            break;
+        case "개머리판":
+            state.mag = [];
+            log("🔨 탄창 파괴! 강제 재장전 단계로.");
+            break;
+        case "망원경":
+            const m1 = state.mag[0] !== undefined ? (state.mag[0] ? "실탄🔴" : "공포탄⚪") : "없음";
+            const m2 = state.mag[1] !== undefined ? (state.mag[1] ? "실탄🔴" : "공포탄⚪") : "없음";
+            if(!isDealer) alert(`🔭 앞의 두 발 확인:\n1번: ${m1}\n2번: ${m2}`);
+            break;
+        case "안경":
+            const last = state.mag[state.mag.length-1] ? "실탄🔴" : "공포탄⚪";
+            if(!isDealer) alert(`👓 마지막 탄 확인: [${last}]`);
+            break;
+        case "모래시계":
+            if(Math.random() < 0.3) { let t = state.p_hp; state.p_hp = state.d_hp; state.d_hp = t; log("⏳ HP 교체!"); }
+            else { if(isDealer) state.d_hp -= 2; else state.p_hp -= 2; log("⏳ 실패! HP -2", "log-danger"); }
+            break;
+        case "트릭박스":
+            const enemyItems = isDealer ? state.p_items : state.d_items;
+            if(enemyItems.length > 0) {
+                let rIdx = Math.floor(Math.random()*enemyItems.length);
+                enemyItems[rIdx] = ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)];
+                log("🎁 상대의 아이템 하나를 변환했습니다!");
+            }
+            break;
+        case "방탄복":
+            if(isDealer) state.d_armor = true; else state.p_armor = true;
+            log(`🛡️ ${user}가 방탄복을 입었습니다.`);
+            break;
+        case "수갑": if(isDealer) state.p_skip = true; else state.d_skip = true; break;
+        case "담배갑": if(isDealer) state.d_hp = Math.min(state.d_max, state.d_hp+1); else state.p_hp = Math.min(state.p_max, state.p_hp+1); break;
+        case "쇠톱": state.dmg = 2; break;
+        case "손톱":
+            const rem1 = state.mag.shift();
+            log(`💅 맨 앞 탄환(${rem1 ? "실탄" : "공포탄"}) 제거.`);
+            break;
+        case "맥주":
+            const rem2 = state.mag.pop();
+            log(`🍺 맨 뒤 탄환(${rem2 ? "실탄" : "공포탄"}) 제거.`);
+            break;
+        case "주사기":
+            const targets = isDealer ? state.p_items : state.d_items;
+            if(targets.length > 0) {
+                let s = targets.splice(Math.floor(Math.random()*targets.length),1)[0];
+                if(isDealer) state.d_items.push(s); else state.p_items.push(s);
+                log(`💉 상대의 [${s}]를 훔쳤습니다!`);
+            }
+            break;
+        case "술":
+            if(isDealer) { state.d_hp = Math.min(state.d_max, state.d_hp+2); state.d_skip=true; }
+            else { state.p_hp = Math.min(state.p_max, state.p_hp+2); state.p_skip=true; }
+            break;
+        case "미니에어컨":
+            if(state.mag.length>0) {
+                state.mag[0] = !state.mag[0];
+                log("❄️ 다음 탄환의 성질이 바뀌었습니다.");
+            }
+            break;
+        case "휴대폰":
+            if (state.mag.length > 0) {
+                const rIdx = Math.floor(Math.random() * state.mag.length);
+                const type = state.mag[rIdx] ? "실탄🔴" : "공포탄⚪";
+                const info = `📱 [휴대폰] ${rIdx + 1}번째 탄환은 ${type}입니다.`;
+                if (!isDealer) { alert(info); log(info, "log-important"); }
+                else state.known_shot = {idx: rIdx, type: state.mag[rIdx]};
+            }
+            break;
+
+        case "약":
+            if (Math.random() < 0.5) {
+                if (isDealer) state.d_hp = Math.min(state.d_max, state.d_hp + 1);
+                else state.p_hp = Math.min(state.p_max, state.p_hp + 1);
+                log("💊 약효가 좋습니다! HP +1");
+            } else {
+                if (isDealer) state.d_hp--; else state.p_hp--;
+                log("💊 부작용 발생! HP -1", "log-danger");
+            }
+            break;
+
+        case "나이프":
+            log(`🔪 ${user}가 나이프로 즉시 공격합니다!`);
+            applyDamage(target, 1);
+            break;
+
+        case "동전":
+            if (Math.random() < 0.6) {
+                state.dmg = 3;
+                log("🪙 동전 앞면! 다음 사격 대미지가 3배가 됩니다.", "log-important");
+            } else {
+                if (isDealer) state.d_hp--; else state.p_hp--;
+                log("🪙 동전 뒷면... 운이 없군요. 본인 HP -1", "log-danger");
+            }
+            break;
+
+        case "눈알":
+            if (isDealer) {
+                state.d_hp -= 2;
+                for(let i=0; i<2; i++) state.d_items.push(ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)]);
+            } else {
+                state.p_hp -= 2;
+                for(let i=0; i<2; i++) state.p_items.push(ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)]);
+            }
+            log("👁️ 미래를 위해 현재를 희생합니다. HP -2, 아이템 +2");
+            break;
+
+        case "전기충격기":
+            const targetItems = isDealer ? state.p_items : state.d_items;
+            if (targetItems.length > 0) {
+                const destroyed = targetItems.splice(Math.floor(Math.random() * targetItems.length), 1)[0];
+                log(`⚡ 전기충격! 상대의 [${destroyed}] 아이템을 파괴했습니다.`);
+            }
+            break;
     }
 
-    state.known_shot = null;
-    updateUI();
-
-    // 게임 종료 여부 확인 후 딜러 턴이면 실행
-    if(!checkGameOver() && state.turn === "D") {
-        setTimeout(dealerLogic, 1500);
-    }
+    updateUI(); // 모든 아이템 사용 후 상태 UI 갱신!
+    checkGameOver(); // 아이템 사용으로 체력이 0이 될 경우 대비
 }
 
-// --- [시각 효과 함수] ---
-
-function showGameAlert(msg, color) {
-    const alertDiv = document.createElement('div');
-    alertDiv.style.cssText = `
-        position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.9); color: ${color}; padding: 30px 60px;
-        border: 4px solid ${color}; border-radius: 15px; font-size: 35px;
-        font-weight: bold; z-index: 2000; pointer-events: none;
-        box-shadow: 0 0 50px rgba(0,0,0,1); animation: fadeOut 1.5s forwards;
-        text-shadow: 2px 2px 5px black;
-    `;
-    alertDiv.innerText = msg;
-    document.body.appendChild(alertDiv);
-    setTimeout(() => alertDiv.remove(), 1500);
-}
-
-function shakeScreen() {
-    const container = document.getElementById('game-container');
-    container.style.animation = 'shake 0.5s';
-    setTimeout(() => container.style.animation = '', 500);
-}
-
-// --- [시스템 로직] ---
+// --- [UI 및 유틸] ---
 
 function checkGameOver() {
-    if(state.p_hp <= 0) {
-        alert("💀 당신은 사망했습니다. GAME OVER.");
-        location.reload();
-        return true;
-    }
+    if(state.p_hp <= 0) { alert("GAME OVER"); location.reload(); return true; }
     if(state.d_hp <= 0) {
-        if(state.wave < 4) {
-            alert(`🎉 WAVE ${state.wave} 승리! 다음 단계로 진입합니다.`);
-            initWave(state.wave + 1);
-        } else {
-            alert("🏆 최종 승리! 당신은 전설적인 도박사가 되었습니다!");
-            location.reload();
-        }
+        if(state.wave < 4) { alert("WAVE 승리!"); initWave(state.wave+1); }
+        else { alert("최종 승리!"); location.reload(); }
         return true;
     }
-
-    // 탄창 소진 시 로직: 결판이 나지 않았다면 자동 재장전
-    if(state.mag.length === 0) {
-        log("🔄 탄창 소진. 새로 장전하고 게임을 계속합니다.", "log-important");
-        setTimeout(() => {
-            setupMag();
-        }, 1000);
-        return false;
-    }
+    if(state.mag.length === 0) { setTimeout(setupMag, 1000); return false; }
     return false;
 }
-
+function initWave(w) {
+    const c = WAVE_CONFIG[w]; state.wave = w; state.p_hp = state.p_max = c.hp; state.d_hp = state.d_max = c.d_hp;
+    state.p_items = []; state.d_items = []; state.p_armor = state.d_armor = state.p_skip = state.d_skip = false;
+    state.p_charm = state.d_charm = 0; state.dmg = 1; state.turn = "P"; setupMag();
+}
 function setupMag() {
-    const conf = WAVE_CONFIG[state.wave];
-    const total = conf.ammo;
+    const c = WAVE_CONFIG[state.wave];
+    const total = c.ammo;
     const live = Math.max(1, Math.floor(total/2) + (Math.random() > 0.5 ? 1 : 0));
     const blank = total - live;
 
@@ -328,290 +529,60 @@ function setupMag() {
     for(let i=0; i<blank; i++) m.push(false);
     state.mag = m.sort(() => Math.random() - 0.5);
 
-    // [중요] 장전 시 무조건 플레이어 선제로 초기화
+    // 📢 장전 정보를 4초(4000ms) 동안 노출합니다.
+    showGameAlert(`이번 탄창\n🔴 실탄: ${live} / ⚪ 공포탄: ${blank}`, "#f1c40f", 4000);
+    log(`새 탄창 장전: 실탄 ${live}발, 공포탄 ${blank}발`, "log-important");
+
     state.turn = "P";
-    state.p_skip = false;
-    state.d_skip = false;
-    state.known_shot = null;
 
-    alert(`🔫 탄창 장전!\n실탄: ${live} / 공포탄: ${blank}\n당신의 턴부터 시작합니다.`);
-
-    // 장전 시 아이템 지급
-    for(let i=0; i<conf.items; i++) {
+    for(let i=0; i<c.items; i++) {
         if(state.p_items.length < 8) state.p_items.push(ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)]);
         if(state.d_items.length < 8) state.d_items.push(ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)]);
     }
-
     updateUI();
-    log("턴이 초기화되었습니다. 플레이어의 차례입니다.");
 }
-
-// --- (UI 업데이트 및 딜러 로직 등 나머지 부분은 이전과 동일하게 유지) ---
 function updateUI() {
     document.getElementById('p-hp').innerText = "♥".repeat(Math.max(0, state.p_hp));
     document.getElementById('d-hp').innerText = "♥".repeat(Math.max(0, state.d_hp));
+
+    const dmgText = state.dmg > 1 ? `⚠️ 다음 대미지: x${state.dmg}` : "";
+    if (state.turn === "P") {
+        document.getElementById('p-mod').innerText = dmgText;
+        document.getElementById('d-mod').innerText = "";
+    } else {
+        document.getElementById('d-mod').innerText = dmgText;
+        document.getElementById('p-mod').innerText = "";
+    }
+
     document.getElementById('wave-title').innerText = `WAVE ${state.wave}`;
-    document.getElementById('ammo-display').innerText = `남은 탄환: ${state.mag.length}발`;
+
+    // 🕵️ 실탄 개수를 숨기고 총 탄환 수만 표시
+    document.getElementById('ammo-display').innerText = `남은 탄환: ${state.mag.length}발 (실탄 개수 알 수 없음)`;
+
     renderItems('p-items', state.p_items, true);
     renderItems('d-items', state.d_items, false);
-    const isPTurn = (state.turn === "P");
-    document.getElementById('btn-to-dealer').disabled = !isPTurn;
-    document.getElementById('btn-to-self').disabled = !isPTurn;
+    document.getElementById('btn-to-dealer').disabled = document.getElementById('btn-to-self').disabled = (state.turn !== "P");
 }
-
-function renderItems(id, list, clickable) {
-    const container = document.getElementById(id);
-    container.innerHTML = "";
-    list.forEach((name, idx) => {
-        const btn = document.createElement('button');
-        btn.className = `item-slot ${!clickable ? 'dealer-item' : ''}`;
-        btn.innerText = name;
-        if(clickable) btn.onclick = () => useItem(idx);
-        container.appendChild(btn);
-    });
+function renderItems(id, list, click) {
+    const c = document.getElementById(id); c.innerHTML = "";
+    list.forEach((n, i) => { const b = document.createElement('button'); b.className = `item-slot ${!click?'dealer-item':''}`; b.innerText = n; if(click) b.onclick = () => useItem(i); c.appendChild(b); });
 }
-
-async function dealerLogic() {
-    if(state.turn !== "D") return;
-
-    // 1. 아이템 사용 단계 (최대 3개까지 사용하도록 상향)
-    let itemsUsed = 0;
-    while(itemsUsed < 3 && state.d_items.length > 0) {
-        let chosenIdx = -1;
-        const d_items = state.d_items;
-
-        // --- 아이템 사용 우선순위 로직 ---
-
-        // 1순위: 체력이 낮을 때 회복 (담배갑, 술, 약)
-        if (state.d_hp <= state.d_max - 1 && d_items.includes("담배갑")) {
-            chosenIdx = d_items.indexOf("담배갑");
-        } else if (state.d_hp <= state.d_max - 2 && d_items.includes("술")) {
-            chosenIdx = d_items.indexOf("술");
-        }
-        // 2순위: 정보 확인 (확대경, 휴대폰)
-        else if (state.known_shot === null && d_items.includes("확대경")) {
-            chosenIdx = d_items.indexOf("확대경");
-        } else if (state.known_shot === null && d_items.includes("휴대폰")) {
-            chosenIdx = d_items.indexOf("휴대폰");
-        }
-        // 3순위: 공격 강화 (쇠톱, 동전, 나이프) - 실탄임을 알 때만 사용
-        else if (state.known_shot === true && d_items.includes("쇠톱")) {
-            chosenIdx = d_items.indexOf("쇠톱");
-        } else if (state.known_shot === true && d_items.includes("동전")) {
-            chosenIdx = d_items.indexOf("동전");
-        } else if (d_items.includes("나이프")) {
-            chosenIdx = d_items.indexOf("나이프");
-        }
-        // 4순위: 방어 및 유틸 (방탄복, 주사기, 수갑)
-        else if (!state.d_armor && d_items.includes("방탄복")) {
-            chosenIdx = d_items.indexOf("방탄복");
-        } else if (d_items.includes("주사기")) {
-            chosenIdx = d_items.indexOf("주사기");
-        } else if (!state.p_skip && d_items.includes("수갑")) {
-            chosenIdx = d_items.indexOf("수갑");
-        }
-        // 5순위: 탄창 조작 (공포탄임을 알 때 반전시키거나 버리기)
-        else if (state.known_shot === false && d_items.includes("미니에어컨")) {
-            chosenIdx = d_items.indexOf("미니에어컨");
-        } else if (state.known_shot === false && d_items.includes("손톱")) {
-            chosenIdx = d_items.indexOf("손톱");
-        }
-
-        // 아이템을 결정했다면 사용
-        if(chosenIdx !== -1) {
-            useItem(chosenIdx, true);
-            itemsUsed++;
-            await new Promise(r => setTimeout(r, 800)); // 아이템 간 사용 간격
-        } else {
-            // 더 이상 쓸만한 아이템이 없으면 확률적으로 무작위 아이템 하나 사용 (실수 유도)
-            if (Math.random() < 0.2) {
-                chosenIdx = Math.floor(Math.random() * d_items.length);
-                useItem(chosenIdx, true);
-                itemsUsed++;
-                await new Promise(r => setTimeout(r, 800));
-            }
-            break;
-        }
-    }
-
-    // 2. 사격 결정 단계
-    let selfShoot = false;
-
-    if(state.known_shot === false) {
-        // 공포탄인걸 알면 자신에게 쏴서 턴 유지
-        selfShoot = true;
-    } else if(state.known_shot === true) {
-        // 실탄인걸 알면 무조건 플레이어에게
-        selfShoot = false;
-    } else {
-        // 모를 때는 남은 실탄 비율 계산
-        const liveCount = state.mag.filter(x => x).length;
-        const totalCount = state.mag.length;
-        const liveRatio = liveCount / totalCount;
-
-        // 실탄 확률이 낮으면(30% 미만) 자신에게 사격 도박
-        if(liveRatio < 0.3) selfShoot = true;
-        else selfShoot = false;
-    }
-
-    setTimeout(() => handleFire(selfShoot), 500);
+function showGameAlert(msg, color, duration = 1500) {
+    const a = document.createElement('div');
+    // 애니메이션 시간을 duration에 맞게 동적으로 설정합니다.
+    a.style.cssText = `
+        position:fixed; top:40%; left:50%; transform:translate(-50%,-50%);
+        background:rgba(0,0,0,0.95); color:${color}; padding:40px 80px;
+        border:5px solid ${color}; border-radius:15px; font-size:40px;
+        font-weight:bold; z-index:2000; text-align:center;
+        box-shadow: 0 0 30px rgba(0,0,0,1);
+        animation: fadeOut ${duration}ms forwards;
+    `;
+    a.innerText = msg;
+    document.body.appendChild(a);
+    setTimeout(() => a.remove(), duration);
 }
-
-function initWave(w) {
-    const conf = WAVE_CONFIG[w];
-    state.wave = w;
-
-    state.p_hp = conf.hp;
-    state.p_max = conf.hp;
-    state.d_hp = conf.d_hp;
-    state.d_max = conf.d_hp;
-
-    state.p_items = [];
-    state.d_items = [];
-
-    state.p_armor = false;
-    state.d_armor = false;
-    state.p_skip = false;
-    state.d_skip = false;
-    state.dmg = 1;
-
-    // 라운드 시작 시 플레이어 선공 설정
-    state.turn = "P";
-    setupMag();
-}
-
-function useItem(idx, isDealer = false) {
-    const list = isDealer ? state.d_items : state.p_items;
-    const name = list.splice(idx, 1)[0]; // 사용한 아이템 제거 및 이름 가져오기
-    const user = isDealer ? "DEALER" : "PLAYER";
-
-    log(`${user}가 [${name}] 아이템을 사용했습니다.`, "log-important");
-
-    switch(name) {
-        case "확대경":
-            const top = state.mag[0] ? "실탄 🔴" : "공포탄 ⚪";
-            if(!isDealer) alert(`🔍 현재 장전된 탄환은 [${top}] 입니다.`);
-            else state.known_shot = state.mag[0];
-            break;
-
-        case "수갑":
-            if(isDealer) state.p_skip = true;
-            else state.d_skip = true;
-            break;
-
-        case "담배갑":
-            if(isDealer) state.d_hp = Math.min(state.d_max, state.d_hp + 1);
-            else state.p_hp = Math.min(state.p_max, state.p_hp + 1);
-            break;
-
-        case "손톱":
-            const removed = state.mag.shift();
-            log(`💅 맨 앞 탄환(${removed ? "실탄" : "공포탄"})을 제거했습니다.`);
-            break;
-
-        case "맥주":
-            const popped = state.mag.pop();
-            log(`🍺 맨 뒤 탄환(${popped ? "실탄" : "공포탄"})을 제거했습니다.`);
-            break;
-
-        case "쇠톱":
-            state.dmg = 2;
-            log(`🪚 다음 사격 대미지가 2배가 됩니다!`);
-            break;
-
-        case "휴대폰":
-            const rndIdx = Math.floor(Math.random() * state.mag.length);
-            const type = state.mag[rndIdx] ? "실탄" : "공포탄";
-            if(!isDealer) alert(`📱 휴대폰 확인: ${rndIdx + 1}번째 탄환은 [${type}]입니다.`);
-            break;
-
-        case "약":
-            if(Math.random() < 0.5) {
-                log("💊 약효가 좋습니다! HP +1");
-                if(isDealer) state.d_hp = Math.min(state.d_max, state.d_hp + 1);
-                else state.p_hp = Math.min(state.p_max, state.p_hp + 1);
-            } else {
-                log("💊 부작용 발생! HP -1", "log-danger");
-                if(isDealer) state.d_hp--; else state.p_hp--;
-            }
-            break;
-
-        case "방탄복":
-            if(isDealer) state.d_armor = true;
-            else state.p_armor = true;
-            break;
-
-        case "주사기":
-            const targetList = isDealer ? state.p_items : state.d_items;
-            if(targetList.length > 0) {
-                const stolen = targetList.splice(Math.floor(Math.random()*targetList.length), 1)[0];
-                if(isDealer) state.d_items.push(stolen); else state.p_items.push(stolen);
-                log(`💉 상대의 [${stolen}]을 훔쳐왔습니다!`);
-            }
-            break;
-
-        case "나이프":
-            if(isDealer) applyDamage("P", 1);
-            else applyDamage("D", 1);
-            break;
-
-        case "동전":
-            if(Math.random() < 0.6) {
-                state.dmg = 3;
-                log("🪙 앞면! 다음 사격 대미지 3배!");
-            } else {
-                if(isDealer) state.d_hp--; else state.p_hp--;
-                log("🪙 뒷면... 본인 HP -1", "log-danger");
-            }
-            break;
-
-        case "눈알":
-            // 눈알은 사용 시 HP가 깎이는 것이므로 최대 체력 체크가 필요 없지만,
-            // 혹시라도 체력이 0이 되어 즉사하는 것을 방지하기 위해 사망 체크가 중요합니다.
-            if(isDealer) state.d_hp -= 2; else state.p_hp -= 2;
-            log("👁️ 자신의 HP를 2 바쳐 아이템 2개를 얻습니다.");
-            for(let i=0; i<2; i++) {
-                let newItem = ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)];
-                if(isDealer) state.d_items.push(newItem); else state.p_items.push(newItem);
-            }
-            break;
-
-        case "술":
-            log("🍷 술을 마셔 체력을 회복하지만 취기가 오릅니다.");
-            if(isDealer) {
-                state.d_hp = Math.min(state.d_max, state.d_hp + 2);
-                state.d_skip = true;
-            } else {
-                state.p_hp = Math.min(state.p_max, state.p_hp + 2);
-                state.p_skip = true;
-            }
-            break;
-
-        case "미니에어컨":
-            if(state.mag.length > 0) {
-                state.mag[0] = !state.mag[0];
-                log("❄️ 다음 탄환의 성질이 반전되었습니다.");
-            }
-            break;
-
-        case "도화선":
-            state.mag.sort(() => Math.random() - 0.5);
-            log("🧨 탄창을 무작위로 다시 섞었습니다.");
-            break;
-
-        case "전기충격기":
-            const enemyItems = isDealer ? state.p_items : state.d_items;
-            if(enemyItems.length > 0) {
-                const broken = enemyItems.splice(Math.floor(Math.random()*enemyItems.length), 1)[0];
-                log(`⚡ 상대의 [${broken}]을 파괴했습니다!`);
-            }
-            break;
-    }
-
-    updateUI();
-    checkGameOver();
-}
-
+function shakeScreen() { const g = document.getElementById('game-container'); g.style.animation = 'shake 0.5s'; setTimeout(() => g.style.animation = '', 500); }
 fillItemModal();
 </script>
 </body>
