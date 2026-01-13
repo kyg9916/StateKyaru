@@ -10,7 +10,9 @@ import datetime
 from google import genai
 import requests
 
-app = Flask(__name__)
+app = Flask(__name__,
+            static_folder='static',    # 정적 폴더 이름을 'static'으로 고정
+            static_url_path='/static') # 주소창에 들어갈 경로를 '/static'으로 고정
 
 # --- [공통 및 환경 설정] ---
 DOWNLOAD_FOLDER = "downloads"
@@ -96,58 +98,80 @@ def get_steam_data(steam_id):
     try:
         response = requests.get(url, params=params)
         data = response.json()
-        if 'games' not in data['response']: return None
+
+        # 응답 데이터 유효성 검사
+        if 'response' not in data or 'games' not in data['response']:
+            return None
 
         games = data['response']['games']
         total_count = len(games)
+        if total_count == 0: return None
 
-        # 기본 데이터 가공
+        # 1. 기본 데이터 가공 및 시간 계산
         for game in games:
-            game['playtime_hours'] = round(game['playtime_forever'] / 60, 1)
+            # playtime_forever는 분(minute) 단위이므로 시간으로 변환
+            game['playtime_hours'] = round(game.get('playtime_forever', 0) / 60, 1)
             last_time = game.get('rtime_last_played', 0)
             game['last_played_date'] = datetime.datetime.fromtimestamp(last_time).strftime(
                 '%Y-%m-%d') if last_time > 0 else "기록 없음"
             game['img_url'] = f"https://cdn.akamai.steamstatic.com/steam/apps/{game['appid']}/header.jpg"
 
-        # 1. 플레이 시간순 정렬 (상위 10개는 차트용)
-        most_played = sorted(games, key=lambda x: x['playtime_forever'], reverse=True)
-
-        # 2. 최근 플레이 순 정렬 (TOP 10)
+        # 2. 정렬 및 필터링
+        most_played = sorted(games, key=lambda x: x.get('playtime_forever', 0), reverse=True)
         last_played = sorted(games, key=lambda x: x.get('rtime_last_played', 0), reverse=True)[:10]
+        never_played = [g for g in games if g.get('playtime_forever', 0) == 0]
+        played_games = [g for g in games if g.get('playtime_forever', 0) > 0]
 
-        # 3. 안 해본 게임 (플레이 시간 0)
-        never_played = [g for g in games if g['playtime_forever'] == 0]
-        never_played_count = len(never_played)
-
-        # 4. 통계 계산
-        played_games = [g for g in games if g['playtime_forever'] > 0]
+        # 3. 주요 통계 수치 계산
         played_count = len(played_games)
-        total_playtime = sum(g['playtime_hours'] for g in games)
+        total_playtime_mins = sum(g.get('playtime_forever', 0) for g in games)
+        total_hours = round(total_playtime_mins / 60, 1)
 
-        # 평균 시간 및 완료율(실행율) 계산
-        avg_hours = round(total_playtime / played_count, 1) if played_count > 0 else 0
+        avg_hours = round(total_hours / played_count, 1) if played_count > 0 else 0
         completion_rate = round((played_count / total_count) * 100, 1) if total_count > 0 else 0
 
+        # 4. 신규 통계: 플레이 시간대별 분포 (차트용)
+        dist_data = {
+            "100h+ (갓겜)": 0,
+            "50h~100h": 0,
+            "10h~50h": 0,
+            "1h~10h": 0,
+            "1h 미만": 0
+        }
+        for g in played_games:
+            h = g['playtime_hours']
+            if h >= 100:
+                dist_data["100h+ (갓겜)"] += 1
+            elif h >= 50:
+                dist_data["50h~100h"] += 1
+            elif h >= 10:
+                dist_data["10h~50h"] += 1
+            elif h >= 1:
+                dist_data["1h~10h"] += 1
+            else:
+                dist_data["1h 미만"] += 1
+
+        # 5. 최종 결과 반환
         return {
             'most_played': most_played,
-            'last_played': last_played,  # 템플릿에서 사용
-            'never_played': never_played,  # 템플릿에서 사용
+            'last_played': last_played,
+            'never_played': never_played,
             'summary': {
                 'total_count': total_count,
                 'played_count': played_count,
-                'never_played_count': never_played_count,  # 템플릿에서 사용
-                'total_hours': round(total_playtime, 1),
-                'avg_hours': avg_hours,  # 템플릿에서 사용
-                'completion_rate': completion_rate  # 에러 발생했던 지점!
+                'never_played_count': len(never_played),
+                'total_hours': total_hours,
+                'avg_hours': avg_hours,
+                'completion_rate': completion_rate  # HTML 52번 줄 에러 해결
             },
             'chart_most_played_labels': [g['name'] for g in most_played[:10]],
             'chart_most_played_data': [g['playtime_hours'] for g in most_played[:10]],
-            # 차트용 데이터 (월별 데이터는 API 한계상 가상 데이터나 추가 구현 필요)
-            'chart_recent_play_labels': ["1월", "2월", "3월", "4월", "5월", "6월"],
-            'chart_recent_play_data': [10, 20, 15, 30, 25, 40]
+            # 시간대별 분포 차트 데이터
+            'chart_dist_labels': list(dist_data.keys()),
+            'chart_dist_data': list(dist_data.values())
         }
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error fetching steam data: {e}")
         return None
 
 
@@ -163,6 +187,11 @@ def index():
 def youtube_page():
     # 유튜브 다운로드 전용 페이지
     return render_template("youtube_audio.html")
+
+@app.route("/rollet")
+def rollet_page():
+    # 유튜브 다운로드 전용 페이지
+    return render_template("rollet_game.html")
 
 @app.route("/lotto")
 def lotto_page():

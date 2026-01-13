@@ -190,6 +190,8 @@ button:disabled {
     margin-top: 20px;
 }
 </style>
+
+
 </head>
 <body>
 
@@ -307,7 +309,7 @@ function showSavedResult(data) {
     scene.innerHTML = `
         <div class="card flipped" style="left:50%; top:50%; transform: translate(-50%, -50%) rotateY(180deg) scale(1.2);">
             <div class="card-face card-back">
-                <img class="tarot-img" src="taro_image/${data.cardIdx}.jpg" alt="tarot">
+               <img class="tarot-img" src="/static/taro_image/${data.cardIdx}.jpg" alt="tarot">
                 <div class="fortune-title">${cardNames[data.cardIdx]}</div>
                 <div class="fortune-desc">${data.desc}</div>
                 <div class="lucky-box">
@@ -379,7 +381,7 @@ function selectCard(card, index) {
     localStorage.setItem('tarotResult', JSON.stringify(resultData));
 
     // 카드 뒷면 채우기
-    card.querySelector('.tarot-img').src = `taro_image/${randomCardIdx}.jpg`;
+    card.querySelector('.tarot-img').src = `/static/taro_image/${randomCardIdx}.jpg`;
     card.querySelector('.fortune-title').innerText = cardNames[randomCardIdx];
     card.querySelector('.fortune-desc').innerText = fortuneText;
     card.querySelector('.l-num').innerText = luckyNum;
@@ -404,55 +406,7 @@ function selectCard(card, index) {
 // [7] 실행 및 보안 설정
 initCards();
 
-// 1. 마우스 오른쪽 클릭 전면 금지 (우클릭 차단)
-document.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    alert("어딜 우클릭을 하려고 하나!? 소스코드는 볼 수 없다네.");
-}, false);
 
-// 2. 텍스트 드래그 및 복사 금지 (소스 분석 방지)
-document.addEventListener('selectstart', function(e) {
-    e.preventDefault();
-});
-
-// 3. 키보드 단축키 정밀 차단
-document.addEventListener('keydown', function(e) {
-    // F12 (개발자 도구)
-    if (e.key === "F12") {
-        e.preventDefault();
-        alert("어딜 개발자 모드를 틀려고 하나!?");
-    }
-
-    // Ctrl + Shift + I (개발자 도구)
-    if (e.ctrlKey && e.shiftKey && e.key === "I") {
-        e.preventDefault();
-        alert("개발자 도구는 금지되어 있네!");
-    }
-
-    // Ctrl + Shift + J (콘솔창)
-    if (e.ctrlKey && e.shiftKey && e.key === "J") {
-        e.preventDefault();
-        alert("콘솔창을 열 수 없습니다.");
-    }
-
-    // Ctrl + Shift + C (요소 검사)
-    if (e.ctrlKey && e.shiftKey && e.key === "C") {
-        e.preventDefault();
-        alert("요소 검사 기능을 사용할 수 없습니다.");
-    }
-
-    // Ctrl + U (소스 보기)
-    if (e.ctrlKey && e.key === "u") {
-        e.preventDefault();
-        alert("소스 코드를 훔쳐보는 건 예의가 아니지!");
-    }
-
-    // Ctrl + S (페이지 저장 금지)
-    if (e.ctrlKey && e.key === "s") {
-        e.preventDefault();
-        alert("페이지 저장은 허용되지 않습니다.");
-    }
-}, false);
 
 </script>
 </body>

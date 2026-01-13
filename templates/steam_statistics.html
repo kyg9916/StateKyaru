@@ -19,10 +19,16 @@
     </style>
 </head>
 <body>
-<div class="container py-3">
-    <button onclick="location.href='/'" class="btn btn-outline-light btn-sm mb-4">
-        🏠 상태알라미 메인으로 돌아가기
-    </button>
+
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <a href="/" class="btn btn-outline-light btn-sm shadow-sm" style="border-radius: 20px; padding: 5px 15px;">
+            🏠 상태알라미 메인
+        </a>
+        <span class="badge bg-primary">Steam Stats v2.0</span>
+    </div>
+</div>
+
 <div class="container py-5">
     <div class="text-center mb-5">
         <h1 class="text-primary fw-bold display-4 mb-2">🎮 내 스팀 게임 통계</h1>
@@ -107,10 +113,10 @@
     <div class="row g-4 mb-4">
         <div class="col-md-8">
             <div class="chart-container shadow">
-                <h5 class="text-info mb-4 text-center">📈 지난 1년 간 월별 플레이 기록</h5>
-                <div style="min-height: 350px;">
-                    <canvas id="recentPlayChart"></canvas>
-                </div>
+                <h5 class="text-info mb-4 text-center">📊 플레이 시간대별 게임 분포</h5>
+<div style="min-height: 350px;">
+    <canvas id="distChart"></canvas>
+</div>
             </div>
         </div>
         <div class="col-md-4">
@@ -189,7 +195,9 @@
                 if (currentVisible >= items.length) btn.style.display = 'none';
             });
         }
+
         {% if stats %}
+        // 1. TOP 10 비중 차트 (Pie)
         const mostPlayedCtx = document.getElementById('mostPlayedChart');
         if (mostPlayedCtx) {
             new Chart(mostPlayedCtx, {
@@ -204,17 +212,25 @@
                 options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: 'white' } } } }
             });
         }
-        const recentPlayCtx = document.getElementById('recentPlayChart');
-        if (recentPlayCtx) {
-            new Chart(recentPlayCtx, {
+
+        // 2. 플레이 시간대 분포 차트 (Bar)
+        const distCtx = document.getElementById('distChart');
+        if (distCtx) {
+            new Chart(distCtx, {
                 type: 'bar',
                 data: {
-                    labels: {{ stats.chart_recent_play_labels | tojson }},
+                    labels: {{ stats.chart_dist_labels | tojson }},
                     datasets: [{
-                        label: '시간(h)',
-                        data: {{ stats.chart_recent_play_data | tojson }},
-                        backgroundColor: 'rgba(102, 192, 244, 0.7)',
-                        borderColor: '#66c0f4',
+                        label: '게임 수',
+                        data: {{ stats.chart_dist_data | tojson }},
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(255, 159, 64, 0.7)',
+                            'rgba(255, 205, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(54, 162, 235, 0.7)'
+                        ],
+                        borderColor: '#fff',
                         borderWidth: 1
                     }]
                 },
@@ -222,15 +238,21 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: { ticks: { color: 'white' }, grid: { display: false } },
-                        y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' }, beginAtZero: true }
+                        x: { ticks: { color: 'white' } },
+                        y: {
+                            ticks: { color: 'white', stepSize: 1 },
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            beginAtZero: true
+                        }
                     },
-                    plugins: { legend: { display: false } }
+                    plugins: {
+                        legend: { display: false }
+                    }
                 }
             });
         }
-        {% endif %}
-    });
+        {% endif %} // <-- 이 부분이 빠져있어서 에러가 났던 거야!
+    }); // <-- 이벤트 리스너 닫기
 </script>
 </body>
 </html>
