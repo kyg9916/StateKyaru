@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystic Tarot Fortune</title>
+<style>
+:root {
+    --bg-dark: #0f0c29;
+    --card-bg: #1e1e3f;
+    --accent: #ffd700;
+    --gold: #f1c40f;
+    --white: #ffffff;
+    --purple: #302b63;
+    --deep-purple: #24243e;
+}
+
+body {
+    font-family: 'Pretendard', sans-serif;
+    /* 배경을 조금 더 신비롭고 밝은 느낌의 그라데이션으로 변경 */
+    background: linear-gradient(to bottom, var(--deep-purple), var(--purple), var(--bg-dark));
+    color: var(--white);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+h1 {
+    font-weight: 300;
+    letter-spacing: 10px;
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
+    margin-bottom: 30px;
+}
+
+.notice-text {
+    font-size: 0.9rem;
+    color: #a29bfe;
+    margin-bottom: 20px;
+}
+
+.scene {
+    position: relative;
+    width: 100vw;
+    height: 550px; /* 높이 확장 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 2000px;
+}
+
+.card {
+    position: absolute;
+    width: 250px;  /* 너비 확장 (기존 200px) */
+    height: 420px; /* 높이 확장 (기존 350px) */
+    cursor: pointer;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    transform-style: preserve-3d;
+}
+
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 15px;
+    border: 2px solid var(--gold);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+}
+
+.card-front {
+    background: linear-gradient(135deg, #2d3436 0%, #000000 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+}
+
+.card-front::after {
+    content: '★';
+    color: var(--gold);
+    opacity: 0.6;
+}
+
+.card-back {
+    background: var(--card-bg);
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.card.flipped {
+    transform: rotateY(180deg) scale(1.1) translateZ(100px);
+    z-index: 1000 !important;
+}
+
+.tarot-img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid var(--gold);
+}
+
+.fortune-title {
+    color: var(--gold);
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 0 0 12px 0;
+    text-align: center;
+}
+
+.fortune-desc {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    text-align: center;
+    color: #efefef;
+    word-break: keep-all;
+    flex-grow: 1;
+    overflow-y: auto; /* 텍스트가 길어지면 내부 스크롤 발생 */
+    padding-right: 5px;
+}
+
+/* 스크롤바 디자인 */
+.fortune-desc::-webkit-scrollbar { width: 4px; }
+.fortune-desc::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
+
+.lucky-box {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed rgba(255,255,255,0.2);
+    font-size: 0.9rem; /* 글자 크기를 살짝 키움 */
+    display: flex;
+    flex-direction: column; /* 위아래로 배치 */
+    gap: 8px; /* 두 줄 사이의 간격 */
+    align-items: center;
+}
+
+.val { color: var(--gold); font-weight: bold; }
+
+.controls {
+    margin-top: 30px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+button {
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 12px 40px;
+    font-size: 1rem;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: 0.3s;
+    border-radius: 30px;
+}
+
+button:hover:not(:disabled) {
+    background: var(--gold);
+    color: var(--bg-dark);
+    box-shadow: 0 0 15px var(--gold);
+}
+
+button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: #666;
+    color: #666;
+}
+
+.btn-home {
+    background: transparent;
+    border: 1px solid #fff;
+    color: #fff;
+    font-size: 0.8rem;
+    padding: 8px 20px;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+</style>
+</head>
+<body>
+
+<h1>MYSTIC TAROT</h1>
+<div class="notice-text">운명은 하루에 한 번만 속삭입니다. (딱 한번만 뽑을 수 있음)</div>
+
+<div class="scene" id="cardScene"></div>
+
+<div class="controls">
+    <button id="shuffleBtn" onclick="startShuffle()">카드 섞기</button>
+    <a href="/" class="btn-home">🏠 상태알라미 메인으로 돌아가기</a>
+</div>
+
+<script>
+const cardNames = ["0. 바보 (The Fool)", "1. 마법사 (The Magician)", "2. 고위 여사제 (The High Priestess)", "3. 여황제 (The Empress)", "4. 황제 (The Emperor)", "5. 교황 (The Hierophant)", "6. 연인 (The Lovers)", "7. 전차 (The Chariot)", "8. 힘 (Strength)", "9. 은둔자 (The Hermit)", "10. 운명의 수레바퀴 (Wheel of Fortune)", "11. 정의 (Justice)", "12. 매달린 사람 (The Hanged Man)", "13. 죽음 (Death)", "14. 절제 (Temperance)", "15. 악마 (The Devil)", "16. 탑 (The Tower)", "17. 별 (The Star)", "18. 달 (The Moon)", "19. 태양 (The Sun)", "20. 심판 (Judgement)", "21. 세계 (The World)"];
+const gameLucks = [
+    "S급: 오늘은 뭘해도 되는 날!",
+    "A급: 연승하는 날!",
+    "B급: 소소한 득템",
+    "C급: 현상 유지",
+    'D급: "억까가 심하네"',
+    "F급: 오늘진짜 왜이러냐?"
+];
+const cardFortunes = {
+    0: ["당신은 새로운 시작이 당신을 기다립니다.", "당신은 계획하지 않은 변화 속에서 성장을 경험한다.", "당신은 익숙하지 않은 제안 속에서 가능성을 본다.", "당신은 한 발 내디뎌 좋은 결과를 만든다.", "당신은 마음속 깊이 품어온 꿈을 향해 구체적인 첫발을 뗀다."],
+    1: ["당신은 자신의 강점을 활용해 결과를 만든다.", "당신은 창의적인 생각으로 새로운 방식을 도입한다.", "당신은 준비된 말 한마디로 분위기를 바꾼다.", "당신은 자신의 재능을 발견하고 이를 발휘할 기회를 잡는다.", "당신은 지식을 실생활에 적용해 큰 도움을 받는다."],
+    2: ["당신은 내면의 목소리에 집중하세요.", "당신은 조용한 시간 속에서 중요한 결론에 도달한다.", "당신은 차분히 상황을 관찰해 실수를 피한다.", "당신은 감정을 정리해 판단이 또렷해진다.", "당신은 복잡한 생각들을 적어 내려가며 해답을 찾는다."],
+    3: ["당신은 풍요로운 결실을 맺을 시기입니다.", "당신은 예상보다 긍정적인 반응을 얻는다.", "당신은 사소한 계기를 통해 흐름을 바꾸는 데 성공한다.", "당신은 주변의 기대를 무리 없이 충족시킨다.", "당신은 삶의 균형을 되찾아 일과 휴식 모두를 조화롭게 누린다."],
+    4: ["당신은 명확한 기준을 세워 선택이 쉬워진다.", "당신은 우선순위를 재조정하며 효율을 높인다.", "당신은 현실적인 판단으로 안정감을 확보한다.", "당신은 상황을 관리하며 안정적인 흐름을 만든다.", "당신은 자신의 역할을 충실히 해 신뢰를 쌓는다."],
+    5: ["당신은 주변의 조언을 받아들여 실수를 피한다.", "당신은 정직한 소통으로 신뢰를 회복한다.", "당신은 조율하는 역할을 맡아 분위기를 안정시킨다.", "당신은 타인의 비판을 겸허히 수용하되 자신감을 잃지 않는다.", "당신은 한결같은 태도로 주변 사람들에게 든든한 존재가 된다."],
+    6: ["당신은 우연한 만남을 통해 필요한 도움을 받는다.", "당신은 솔직한 표현으로 관계가 한층 편안해진다.", "당신은 감정 표현을 조절해 관계를 안정시킨다.", "당신은 소중한 사람에게 마음을 담은 선물을 전하며 행복을 나눈다.", "당신은 오랜만에 마주한 친구와 깊은 대화를 나눈다."],
+    7: ["당신은 꾸준한 노력 끝에 가시적인 성과를 얻는다.", "당신은 한발 빠른 대응으로 여유를 얻는다.", "당신은 목표를 향한 열정을 되새기며 반복을 견뎌낸다.", "당신은 자신을 믿고 묵묵히 나아가 결국 목표한 곳에 닿는다.", "당신은 준비된 태도로 상황을 유리하게 이끈다."],
+    8: ["당신은 부드러운 설득으로 상황을 유리하게 이끈다.", "당신은 인내심을 가지고 기다려 적절한 순간을 잡는다.", "당신은 자신의 한계를 고려해 무리하지 않는다.", "당신은 감정에 휘둘리지 않아 결과가 깔끔해진다.", "당신은 어려운 과제 앞에서도 포기하지 않는 끈기를 발휘한다."],
+    9: ["당신은 잠시의 휴식을 통해 집중력을 회복한다.", "당신은 혼자만의 시간 속에서 내면의 성장을 이룬다.", "당신은 불필요한 비교를 멈추며 마음이 편해진다.", "당신은 한발 물러나 상황을 정리한다.", "당신은 따뜻한 차 한 잔의 여유 속에서 내일을 설계한다."],
+    10: ["당신은 뜻밖의 행운을 얻는다.", "당신은 예상치 못한 연락을 받는 상황에서 방향이 분명해진다.", "당신은 흐름을 읽고 자연스럽게 대응한다.", "당신은 계획하지 않은 변화 속에서 기회를 잡는다.", "당신은 사소한 계기로 흐름을 바꾸는 데 성공한다."],
+    11: ["당신은 객관적인 판단으로 문제를 해결한다.", "당신은 균형 잡힌 시각이 필요한 때입니다.", "당신은 현실적인 기준으로 판단이 명확해진다.", "당신은 정돈된 환경 덕분에 집중이 쉬워진다.", "당신은 감정을 배제하고 상황을 논리적으로 정리한다."],
+    12: ["당신은 관점을 바꾸어 새로운 해답을 찾는다.", "당신은 지금의 멈춤을 성장의 발판으로 삼는다.", "당신은 조급함을 내려놓아 흐름이 부드러워진다.", "당신은 상황을 유연하게 받아들여 갈등을 줄인다.", "당신은 한 발 물러나 전체를 조망한다."],
+    13: ["당신은 불필요한 부분을 덜어내고 새롭게 시작한다.", "당신은 과거의 미련을 버리고 현재에 집중한다.", "당신은 정리를 통해 새로운 에너지를 얻는다.", "당신은 마무리를 깔끔하게 하여 다음 단계를 준비한다.", "당신은 익숙한 것과 이별하고 더 큰 세계로 나간다."],
+    14: ["당신은 상황을 조율하여 전체 균형을 맞춘다.", "당신은 감정과 이성의 조화를 이룬다.", "당신은 절제된 태도로 실수를 예방한다.", "당신은 서두르지 않고 적절한 타이밍을 기다린다.", "당신은 중용의 태도로 주변의 신뢰를 얻는다."],
+    15: ["당신은 유혹에 흔들리지 않고 중심을 지킨다.", "당신은 자신의 약점을 파악하여 개선점을 찾는다.", "당신은 구속에서 벗어나 자유로운 선택을 내린다.", "당신은 불필요한 집착을 내려놓아 마음이 가벼워진다.", "당신은 본능적인 충동을 다스려 이성적으로 대처한다."],
+    16: ["당신은 갑작스러운 변화 속에서 대안을 찾아낸다.", "당신은 고정관념을 깨고 진실을 마주한다.", "당신은 위기 상황을 침착하게 수습하여 신뢰를 얻는다.", "당신은 낡은 방식을 버리고 근본적인 해결책을 마련한다.", "당신은 무너진 곳에서 더 단단한 기초를 쌓는다."],
+    17: ["당신은 희망적인 미래를 설계하며 영감을 얻는다.", "당신은 맑은 정신으로 창의적인 생각을 떠올린다.", "당신은 당신의 꿈이 현실이 될 가능성을 발견한다.", "당신은 순수한 마음으로 주변에 긍정적인 영향을 준다.", "당신은 밤하늘의 별처럼 당신만의 빛을 발한다."],
+    18: ["당신은 불안감을 떨치고 직관을 믿고 나아간다.", "당신은 모호한 상황 속에서 실마리를 찾아낸다.", "당신은 마음의 혼란을 잠재우고 평온을 되찾는다.", "당신은 겉모습 너머의 진실을 꿰뚫어 본다.", "당신은 보이지 않는 위험을 미리 감지해 대비한다."],
+    19: ["당신은 밝고 긍정적인 에너지로 하루를 채운다.", "당신은 모든 일이 순조롭게 풀려 활력을 얻는다.", "당신은 주변의 축복 속에서 성공을 만끽한다.", "당신은 아이 같은 순수함으로 즐거움을 발견한다.", "당신은 당신의 존재만으로도 주변을 환하게 밝힌다."],
+    20: ["당신은 과거의 노력을 인정받아 보상을 받는다.", "당신은 중요한 결단을 내려 새로운 국면을 맞이한다.", "당신은 오해를 풀고 다시 시작할 기회를 얻는다.", "당신은 내면의 부름에 응답하여 행동에 나선다.", "당신은 명확한 깨달음을 통해 방향을 정한다."],
+    21: ["당신은 목표를 달성하고 완벽한 마무리를 짓는다.", "당신은 모든 상황이 조화롭게 연결되는 것을 경험한다.", "당신은 새로운 세상으로 나아갈 준비를 마친다.", "당신은 최고의 만족감을 느끼며 성취를 축하한다.", "당신은 당신의 세계를 넓혀 더 큰 꿈을 꾼다."]
+};
+
+const scene = document.getElementById('cardScene');
+const shuffleBtn = document.getElementById('shuffleBtn');
+let cards = [];
+let isShuffling = false;
+
+// [1] 날짜 및 결과 체크 기능
+function canPlayToday() {
+    const savedData = localStorage.getItem('tarotResult');
+    if (!savedData) return true;
+
+    const data = JSON.parse(savedData);
+    const today = new Date().toDateString();
+    return data.date !== today;
+    // 테스트용: 위 줄을 지우고 return true; 로 변경 data.date !== today;
+}
+
+// [2] 페이지 접속 시 실행되는 초기화 함수
+function initCards() {
+    const savedData = localStorage.getItem('tarotResult');
+    const today = new Date().toDateString();
+
+    if (savedData) {
+        const data = JSON.parse(savedData);
+        if (data.date === today) {
+            showSavedResult(data); // 오늘 이미 뽑았다면 결과 바로 보여주기
+            return;
+        }
+    }
+    renderNewGame(); // 뽑은 적이 없거나 날짜가 지났다면 새 게임 준비
+}
+
+// [3] 새로운 카드를 화면에 배치하는 함수
+function renderNewGame() {
+    scene.innerHTML = '';
+    cards = [];
+    for (let i = 0; i < 22; i++) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const angle = (i - 10.5) * 5;
+        card.style.transform = `rotateZ(${angle}deg) translateY(-20px)`;
+        card.style.zIndex = i;
+
+        card.innerHTML = `
+            <div class="card-face card-front"></div>
+            <div class="card-face card-back">
+                <img class="tarot-img" src="" alt="tarot">
+                <div class="fortune-title"></div>
+                <div class="fortune-desc"></div>
+                <div class="lucky-box">
+                    <div class="lucky-row">행운 번호: <span class="val l-num"></span></div>
+                    <div class="lucky-row">오늘의 게임운: <span class="val l-game"></span></div>
+                </div>
+            </div>
+        `;
+
+        card.onclick = () => selectCard(card, i);
+        scene.appendChild(card);
+        cards.push(card);
+    }
+}
+
+// [4] 오늘 뽑은 결과를 다시 보여주는 함수
+function showSavedResult(data) {
+    shuffleBtn.disabled = true;
+    shuffleBtn.innerText = "오늘의 운명을 이미 확인하셨습니다.";
+
+    scene.innerHTML = `
+        <div class="card flipped" style="left:50%; top:50%; transform: translate(-50%, -50%) rotateY(180deg) scale(1.2);">
+            <div class="card-face card-back">
+                <img class="tarot-img" src="taro_image/${data.cardIdx}.jpg" alt="tarot">
+                <div class="fortune-title">${cardNames[data.cardIdx]}</div>
+                <div class="fortune-desc">${data.desc}</div>
+                <div class="lucky-box">
+                    <div class="lucky-row">행운 번호: <span class="val">${data.num}</span></div>
+                    <div class="lucky-row">오늘의 게임운: <span class="val">${data.luck}</span></div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const notice = document.querySelector('.notice-text');
+    if(notice) notice.innerHTML = "당신이 오늘 선택했던 운명입니다. <br><small>(새로운 카드는 내일 다시 뽑을 수 있습니다)</small>";
+}
+
+// [5] 카드 섞기 애니메이션
+async function startShuffle() {
+    if(isShuffling || !canPlayToday()) return;
+    isShuffling = true;
+    shuffleBtn.disabled = true;
+
+    // 1. 섞기 시작할 때 문구 변경
+    shuffleBtn.innerText = "운명을 섞는 중입니다...";
+
+    cards.forEach(card => {
+        card.style.transform = `rotateZ(0deg) translateY(0)`;
+    });
+
+    await new Promise(r => setTimeout(r, 500));
+
+    for(let i=0; i<2; i++) {
+        cards.forEach(card => {
+            const x = (Math.random() - 0.5) * 500;
+            const y = (Math.random() - 0.5) * 150;
+            const rot = (Math.random() - 0.5) * 180;
+            card.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+        });
+        await new Promise(r => setTimeout(r, 600));
+    }
+
+    cards.forEach((card, i) => {
+        card.style.transform = `translateX(${(i-10.5) * 18}px)`;
+        card.style.zIndex = i;
+    });
+
+    // 2. 섞기가 끝났을 때 문구 변경
+    shuffleBtn.innerText = "신중하게 카드를 한 장 선택하세요";
+    // 버튼을 다시 활성화하고 싶지 않다면 위 줄만 유지,
+    // 클릭은 카드 자체에서 처리하므로 버튼은 안내판 역할만 하게 됩니다.
+}
+
+// [6] 카드 선택 및 데이터 저장
+function selectCard(card, index) {
+    if(!isShuffling || card.classList.contains('flipped')) return;
+
+    const randomCardIdx = Math.floor(Math.random() * 22);
+    const specificFortunes = cardFortunes[randomCardIdx];
+    const fortuneText = specificFortunes[Math.floor(Math.random() * specificFortunes.length)];
+    const luckyNum = Math.floor(Math.random() * 100) + 1;
+    const gameLuck = gameLucks[Math.floor(Math.random() * gameLucks.length)];
+
+    // 데이터 저장
+    const resultData = {
+        date: new Date().toDateString(),
+        cardIdx: randomCardIdx,
+        desc: fortuneText,
+        num: luckyNum,
+        luck: gameLuck
+    };
+    localStorage.setItem('tarotResult', JSON.stringify(resultData));
+
+    // 카드 뒷면 채우기
+    card.querySelector('.tarot-img').src = `taro_image/${randomCardIdx}.jpg`;
+    card.querySelector('.fortune-title').innerText = cardNames[randomCardIdx];
+    card.querySelector('.fortune-desc').innerText = fortuneText;
+    card.querySelector('.l-num').innerText = luckyNum;
+    card.querySelector('.l-game').innerText = gameLuck;
+
+    // 다른 카드 숨기기
+    cards.forEach(c => {
+        if(c !== card) {
+            c.style.opacity = "0";
+            c.style.pointerEvents = "none";
+        }
+    });
+
+    card.classList.add('flipped');
+    card.style.left = '50%';
+    card.style.top = '50%';
+    card.style.transform = `translate(-50%, -50%) rotateY(180deg) scale(1.2)`;
+
+    shuffleBtn.innerText = "오늘의 운명을 확인했습니다";
+}
+
+// [7] 실행 및 보안 설정
+initCards();
+
+// 1. 마우스 오른쪽 클릭 전면 금지 (우클릭 차단)
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    alert("어딜 우클릭을 하려고 하나!? 소스코드는 볼 수 없다네.");
+}, false);
+
+// 2. 텍스트 드래그 및 복사 금지 (소스 분석 방지)
+document.addEventListener('selectstart', function(e) {
+    e.preventDefault();
+});
+
+// 3. 키보드 단축키 정밀 차단
+document.addEventListener('keydown', function(e) {
+    // F12 (개발자 도구)
+    if (e.key === "F12") {
+        e.preventDefault();
+        alert("어딜 개발자 모드를 틀려고 하나!?");
+    }
+
+    // Ctrl + Shift + I (개발자 도구)
+    if (e.ctrlKey && e.shiftKey && e.key === "I") {
+        e.preventDefault();
+        alert("개발자 도구는 금지되어 있네!");
+    }
+
+    // Ctrl + Shift + J (콘솔창)
+    if (e.ctrlKey && e.shiftKey && e.key === "J") {
+        e.preventDefault();
+        alert("콘솔창을 열 수 없습니다.");
+    }
+
+    // Ctrl + Shift + C (요소 검사)
+    if (e.ctrlKey && e.shiftKey && e.key === "C") {
+        e.preventDefault();
+        alert("요소 검사 기능을 사용할 수 없습니다.");
+    }
+
+    // Ctrl + U (소스 보기)
+    if (e.ctrlKey && e.key === "u") {
+        e.preventDefault();
+        alert("소스 코드를 훔쳐보는 건 예의가 아니지!");
+    }
+
+    // Ctrl + S (페이지 저장 금지)
+    if (e.ctrlKey && e.key === "s") {
+        e.preventDefault();
+        alert("페이지 저장은 허용되지 않습니다.");
+    }
+}, false);
+
+</script>
+</body>
+</html>

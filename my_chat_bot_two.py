@@ -135,6 +135,10 @@ def youtube_page():
 def lotto_page():
     return render_template("lotto.html")
 
+@app.route("/lucky")
+def taro_page():
+    return render_template("lucky.html")
+
 
 @app.route('/download', methods=['POST'])
 def download():
