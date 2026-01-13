@@ -305,9 +305,13 @@ function checkGameOver() {
         }
         return true;
     }
+
+    // 탄창 소진 시 로직: 결판이 나지 않았다면 자동 재장전
     if(state.mag.length === 0) {
-        log("🔄 탄창 소진. 새로 장전합니다.");
-        setupMag();
+        log("🔄 탄창 소진. 새로 장전하고 게임을 계속합니다.", "log-important");
+        setTimeout(() => {
+            setupMag();
+        }, 1000);
         return false;
     }
     return false;
@@ -324,14 +328,22 @@ function setupMag() {
     for(let i=0; i<blank; i++) m.push(false);
     state.mag = m.sort(() => Math.random() - 0.5);
 
-    alert(`🔫 탄창 장전!\n실탄: ${live} / 공포탄: ${blank}`);
+    // [중요] 장전 시 무조건 플레이어 선제로 초기화
+    state.turn = "P";
+    state.p_skip = false;
+    state.d_skip = false;
+    state.known_shot = null;
+
+    alert(`🔫 탄창 장전!\n실탄: ${live} / 공포탄: ${blank}\n당신의 턴부터 시작합니다.`);
 
     // 장전 시 아이템 지급
     for(let i=0; i<conf.items; i++) {
         if(state.p_items.length < 8) state.p_items.push(ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)]);
         if(state.d_items.length < 8) state.d_items.push(ITEM_LIST[Math.floor(Math.random()*ITEM_LIST.length)]);
     }
+
     updateUI();
+    log("턴이 초기화되었습니다. 플레이어의 차례입니다.");
 }
 
 // --- (UI 업데이트 및 딜러 로직 등 나머지 부분은 이전과 동일하게 유지) ---
@@ -449,24 +461,23 @@ function initWave(w) {
     const conf = WAVE_CONFIG[w];
     state.wave = w;
 
-    // 핵심 수정: 라운드 시작 시 체력 초기화 및 '아이템 초기화'
     state.p_hp = conf.hp;
     state.p_max = conf.hp;
     state.d_hp = conf.d_hp;
     state.d_max = conf.d_hp;
 
-    state.p_items = []; // 플레이어 아이템 초기화
-    state.d_items = []; // 딜러 아이템 초기화
+    state.p_items = [];
+    state.d_items = [];
 
-    // 상태 이상 초기화 (방탄복, 수갑 등)
     state.p_armor = false;
     state.d_armor = false;
     state.p_skip = false;
     state.d_skip = false;
     state.dmg = 1;
 
+    // 라운드 시작 시 플레이어 선공 설정
     state.turn = "P";
-    setupMag(); // 여기서 새로운 탄창과 함께 아이템이 새로 지급됩니다.
+    setupMag();
 }
 
 function useItem(idx, isDealer = false) {
