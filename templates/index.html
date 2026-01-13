@@ -505,8 +505,43 @@ function closeStatsModal() { document.getElementById('statsModal').style.display
 function drawChart() {
     const stats = JSON.parse(localStorage.getItem('statusStats') || '{}');
     const ctx = document.getElementById('statsChart').getContext('2d');
+
     if (myChart) myChart.destroy();
-    myChart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(stats), datasets: [{ label: '횟수', data: Object.values(stats), backgroundColor: '#5865F2' }] } });
+
+    myChart = new Chart(ctx, {
+        type: 'line', // 1. 꺾은선 그래프로 변경
+        data: {
+            labels: Object.keys(stats),
+            datasets: [{
+                label: '상태 사용 횟수',
+                data: Object.values(stats),
+                borderColor: '#5865F2', // 선 색상
+                backgroundColor: 'rgba(88, 101, 242, 0.2)', // 선 아래 채우기 색상
+                borderWidth: 3,
+                tension: 0.3, // 2. 선을 약간 부드럽게 (0으로 하면 완전히 뾰족해짐)
+                fill: true,   // 선 아래 영역 채우기
+                pointRadius: 5, // 점 크기
+                pointBackgroundColor: '#5865F2'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        // 3. 1단위로 딱딱 끊어지게 설정 (소수점 제거)
+                        stepSize: 1,
+                        callback: function(value) {
+                            if (Math.floor(value) === value) {
+                                return value;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 async function askKyaru() {
     const input = document.getElementById('kyaru-input');
