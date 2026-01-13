@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프리미엄 로또 시뮬레이터 v5</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #f1c40f;
+            --bg-color: #f4f7f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #e1e8ed;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0; padding: 20px;
+            display: flex; justify-content: center;
+        }
+
+        .container { width: 100%; max-width: 900px; background: var(--card-bg); padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+
+        /* 동행복권 바로가기 링크 섹션 */
+        .official-link-box {
+            background: #fff;
+            border: 2px dashed var(--primary-color);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .official-link-box p { margin: 0 0 10px 0; font-weight: bold; color: var(--secondary-color); }
+        .btn-link {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn-link:hover { background: #2980b9; transform: scale(1.05); }
+
+        /* 대시보드 */
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-item { background: #fff; padding: 20px; border-radius: 15px; border: 1px solid var(--border-color); text-align: center; }
+        .stat-item label { display: block; font-size: 0.8em; color: #7f8c8d; margin-bottom: 8px; font-weight: 600; }
+        .stat-item span { font-size: 1.3em; font-weight: 800; color: var(--secondary-color); }
+
+        /* 컨트롤 영역 */
+        .controls { background: #ffffff; border: 1px solid var(--border-color); padding: 25px; border-radius: 15px; margin-bottom: 30px; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        input[type="number"] { padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; flex: 1; }
+        button { padding: 12px 20px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .btn-predict { background: var(--secondary-color); color: white; border: 2px solid var(--accent-color); width: 100%; margin-top: 5px; font-size: 1.1em; }
+        .btn-main { background: var(--primary-color); color: white; }
+        .btn-charge { background: var(--success-color); color: white; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        /* 로또 공 */
+        .ball { display: inline-block; width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; margin-right: 4px; font-weight: bold; color: white; font-size: 0.85em; box-shadow: inset -2px -2px 4px rgba(0,0,0,0.2); }
+        .b-1 { background: #fbc400; } .b-2 { background: #69c8f2; } .b-3 { background: #ff7272; } .b-4 { background: #aaaaaa; } .b-5 { background: #b0d840; }
+        .ball.matched { border: 3px solid #e74c3c; box-sizing: border-box; animation: match-ani 0.5s ease-in-out; }
+        @keyframes match-ani { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* 로그 */
+        .log-container { border: 1px solid var(--border-color); border-radius: 15px; height: 450px; overflow-y: auto; background: #fff; }
+        .log-header { position: sticky; top: 0; background: var(--secondary-color); color: white; padding: 12px 20px; font-weight: bold; z-index: 5; }
+        .log-entry { padding: 12px 20px; border-bottom: 1px solid #f1f3f5; display: flex; align-items: center; justify-content: space-between; }
+        .win-tag { padding: 4px 10px; border-radius: 6px; font-size: 0.75em; font-weight: 800; background: var(--danger-color); color: white; }
+        .round-result-card { background: #eef7ff; padding: 15px; font-weight: bold; text-align: center; border-bottom: 2px solid var(--primary-color); position: sticky; top: 45px; z-index: 4; }
+
+        /* 모달 창 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 500px; width: 90%; position: relative; }
+        .modal-close { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #999; }
+        .predict-numbers { margin: 25px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button onclick="location.href='/'" class="btn btn-outline-light btn-sm mb-4">
+        🏠 상태알라미 메인으로 돌아가기
+    </button>
+    <h1 style="text-align: center;">로또 번호 생성기 & 시뮬레이터</h1>
+    <p style="text-align: center; color: #888; margin-bottom: 30px;">Developed by 초록자두 | 데이터 기반 가상 추첨 시스템</p>
+
+    <div class="official-link-box">
+        <p>실제 동행복권 당첨 번호를 확인하시겠습니까?</p>
+        <a href="https://www.dhlottery.co.kr/common.do?method=main" target="_blank" class="btn-link">
+            🔗 동행복권 최신 당첨 번호 확인하러 가기
+        </a>
+    </div>
+
+    <div class="dashboard">
+        <div class="stat-item"><label>현재 잔액</label><span id="money">0</span>원</div>
+        <div class="stat-item"><label>총 지출액</label><span id="spent">0</span>원</div>
+        <div class="stat-item"><label>수익률</label><span id="profit-rate">0%</span></div>
+    </div>
+
+    <div class="controls">
+        <div class="input-row">
+            <input type="number" id="charge-input" placeholder="충전 금액 (원)">
+            <button class="btn-charge" onclick="actionCharge()">캐시 충전</button>
+        </div>
+        <div class="input-row">
+            <input type="number" id="count-input" placeholder="수량(장)" value="1">
+            <button class="btn-main" onclick="actionBuy('auto')">자동 구매</button>
+            <button class="btn-main" style="background:#95a5a6" onclick="actionBuy('manual')">수동</button>
+            <button class="btn-main" style="background:#7f8c8d" onclick="actionBuy('semi')">반자동</button>
+        </div>
+        <button class="btn-predict" onclick="openPredictModal()">✨ AI/통계 기반 번호 예측하기</button>
+    </div>
+
+    <div class="log-container">
+        <div class="log-header">실시간 시뮬레이션 결과</div>
+        <div id="log-content">
+            <p style="text-align:center; color:#ccc; padding:20px;">시뮬레이션을 통해 당첨 확률을 테스트해보세요.</p>
+        </div>
+    </div>
+</div>
+
+
+
+<div id="predictModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closePredictModal()">&times;</span>
+        <h2 style="color:var(--secondary-color)">🔥 AI 분석 예측 번호</h2>
+        <p>과거 최다 빈도와 가중치를 분석한 결과입니다.</p>
+        <div class="predict-numbers" id="modal-predict-numbers"></div>
+        <button class="btn-main" style="width:100%" onclick="buyPredicted()">이 번호로 즉시 구매</button>
+    </div>
+</div>
+
+<script>
+    let state = {
+        money: 0, spent: 0, winnings: 0,
+        stats: [43, 34, 1, 27, 13, 17, 12, 18, 33, 4, 14, 24, 26, 40, 39],
+        currentPredicted: []
+    };
+
+    const PRIZES = { 1: 2000000000, 2: 100000000, 3: 1500000, 4: 50000, 5: 5000 };
+
+    function getBallHTML(n, isMatched = false) {
+        let cls = "b-1";
+        if (n > 40) cls = "b-5"; else if (n > 30) cls = "b-4";
+        else if (n > 20) cls = "b-3"; else if (n > 10) cls = "b-2";
+        return `<span class="ball ${cls} ${isMatched ? 'matched' : ''}">${n}</span>`;
+    }
+
+    function updateUI() {
+        document.getElementById('money').innerText = state.money.toLocaleString();
+        document.getElementById('spent').innerText = state.spent.toLocaleString();
+        let rate = state.spent === 0 ? 0 : (state.winnings / state.spent * 100).toFixed(1);
+        const rateEl = document.getElementById('profit-rate');
+        rateEl.innerText = rate + "%";
+        rateEl.style.color = rate >= 100 ? "#27ae60" : "#e74c3c";
+    }
+
+    function openPredictModal() {
+        state.currentPredicted = predictLottoNumbers();
+        document.getElementById('modal-predict-numbers').innerHTML =
+            state.currentPredicted.map(n => getBallHTML(n)).join('');
+        document.getElementById('predictModal').style.display = 'flex';
+    }
+
+    function closePredictModal() {
+        document.getElementById('predictModal').style.display = 'none';
+    }
+
+    function buyPredicted() {
+        if (state.money < 1000) return alert("잔액이 부족합니다.");
+        closePredictModal();
+        actionBuy('predict', state.currentPredicted);
+    }
+
+    function predictLottoNumbers() {
+        let pool = [];
+        let weights = Array(46).fill(1);
+        state.stats.forEach(n => weights[n] += 15);
+        for(let i=1; i<=45; i++) { for(let j=0; j<weights[i]; j++) pool.push(i); }
+        let res = new Set();
+        while(res.size < 6) res.add(pool[Math.floor(Math.random()*pool.length)]);
+        return Array.from(res).sort((a,b)=>a-b);
+    }
+
+    function actionCharge() {
+        const val = parseInt(document.getElementById('charge-input').value);
+        if(isNaN(val) || val <= 0) return alert("금액을 입력하세요.");
+        state.money += val;
+        updateUI();
+        document.getElementById('charge-input').value = "";
+    }
+
+    function actionBuy(mode, fixedNumbers = null) {
+        let count = (mode === 'predict' || mode === 'manual' || mode === 'semi') ? 1 : parseInt(document.getElementById('count-input').value);
+        if(state.money < count * 1000) return alert("잔액이 부족합니다.");
+
+        // 시뮬레이션용 당첨 번호 생성
+        const winNums = Array.from({length:45},(_,i)=>i+1).sort(()=>Math.random()-0.5).slice(0,6).sort((a,b)=>a-b);
+        const bonus = Math.floor(Math.random()*45)+1;
+
+        state.money -= count * 1000;
+        state.spent += count * 1000;
+
+        const logContent = document.getElementById('log-content');
+        if(logContent.querySelector('p')) logContent.innerHTML = '';
+
+        const roundCard = document.createElement('div');
+        roundCard.className = 'round-result-card';
+        roundCard.innerHTML = `🎯 시뮬레이션 추첨 결과: ${winNums.map(n => getBallHTML(n)).join('')} + ${getBallHTML(bonus)}`;
+        logContent.prepend(roundCard);
+
+        for(let i=0; i<count; i++) {
+            let myNums;
+            if(mode === 'predict') myNums = fixedNumbers;
+            else if(mode === 'manual') {
+                let inp = prompt("6개 숫자 입력 (예: 1, 10, 20, 30, 40, 45)");
+                if(!inp) return;
+                myNums = inp.split(',').map(n=>parseInt(n.trim())).filter(n=>!isNaN(n) && n>=1 && n<=45).sort((a,b)=>a-b);
+                if(myNums.length !== 6) return alert("1~45 사이의 6개 숫자를 정확히 입력하세요.");
+            } else if(mode === 'semi') {
+                let inp = prompt("고정할 숫자(1~5개)를 입력하세요.");
+                let fixed = inp ? inp.split(',').map(n=>parseInt(n.trim())).filter(n=>!isNaN(n)) : [];
+                let s = new Set(fixed.slice(0,5));
+                while(s.size < 6) s.add(Math.floor(Math.random()*45)+1);
+                myNums = Array.from(s).sort((a,b)=>a-b);
+            } else {
+                myNums = Array.from({length:45},(_,i)=>i+1).sort(()=>Math.random()-0.5).slice(0,6).sort((a,b)=>a-b);
+            }
+
+            let matchCount = myNums.filter(n => winNums.includes(n)).length;
+            let hasBonus = myNums.includes(bonus);
+            let rank = (matchCount === 6) ? 1 : (matchCount === 5 && hasBonus) ? 2 : (matchCount === 5) ? 3 : (matchCount === 4) ? 4 : (matchCount === 3) ? 5 : 0;
+
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            let ballsHTML = myNums.map(n => getBallHTML(n, winNums.includes(n) || (n===bonus && rank===2))).join('');
+            let winTag = rank > 0 ? `<span class="win-tag">${rank}등 당첨!</span>` : `<span style="color:#ccc; font-size:0.8em;">낙첨</span>`;
+
+            if(rank > 0) {
+                state.money += PRIZES[rank];
+                state.winnings += PRIZES[rank];
+            }
+
+            entry.innerHTML = `<div>${ballsHTML}</div> ${winTag}`;
+            roundCard.after(entry);
+        }
+        updateUI();
+    }
+    updateUI();
+</script>
+</body>
+</html>

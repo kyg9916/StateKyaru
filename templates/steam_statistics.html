@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 스팀 게임 통계</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #1b2838; color: white; font-family: 'Malgun Gothic', sans-serif; }
+        .card { background-color: #2a475e; color: white; border: none; }
+        .game-card { transition: transform 0.2s, box-shadow 0.2s; border: 1px solid #34546b; text-decoration: none; display: block; height: 100%; }
+        .game-card:hover { transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.5); z-index: 10; border-color: #66c0f4; }
+        .game-img { width: 100%; height: auto; border-radius: 4px 4px 0 0; aspect-ratio: 460/215; object-fit: cover; }
+        .never-played-scroll { max-height: 200px; overflow-y: auto; background-color: #16202d; padding: 15px; border-radius: 5px; }
+        .chart-container { background-color: #2a475e; padding: 25px; border-radius: 8px; height: 100%; }
+        .never-played-scroll::-webkit-scrollbar { width: 6px; }
+        .never-played-scroll::-webkit-scrollbar-thumb { background: #34546b; border-radius: 10px; }
+    </style>
+</head>
+<body>
+<div class="container py-3">
+    <button onclick="location.href='/'" class="btn btn-outline-light btn-sm mb-4">
+        🏠 상태알라미 메인으로 돌아가기
+    </button>
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="text-primary fw-bold display-4 mb-2">🎮 내 스팀 게임 통계</h1>
+        <p class="text-secondary">나의 게임 라이브러리를 한눈에 분석합니다.</p>
+        <button type="button" class="btn btn-outline-light btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#howToUseModal">사용 방법</button>
+    </div>
+
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-8">
+            <div class="card p-4 shadow-sm border-0">
+                <form method="POST">
+                    <div class="input-group">
+                        <input type="text" name="steam_id" class="form-control bg-dark text-white border-secondary" placeholder="Steam ID64 또는 커스텀 URL 입력" required>
+                        <button class="btn btn-primary px-4" type="submit">분석 시작</button>
+                    </div>
+                </form>
+                {% if error %}<div class="alert alert-danger mt-3 mb-0 py-2">{{ error }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if stats %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow border-top border-danger border-4">
+                <div class="card-header bg-dark py-3 text-center">
+                    <h5 class="mb-0">👻 안 해본 게임 <span class="text-danger">({{ stats.summary.never_played_count }}개 / 전체의 {{ (100 - stats.summary.completion_rate)|round(1) }}%)</span></h5>
+                </div>
+                <div class="card-body">
+                    <div class="never-played-scroll">
+                        <div class="row g-2 text-center">
+                            {% for game in stats.never_played %}
+                            <div class="col-md-3 col-sm-6">
+                                <a href="https://store.steampowered.com/app/{{ game.appid }}" target="_blank" class="text-decoration-none text-secondary small text-truncate d-block">• {{ game.name }}</a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="text-info mb-4">📅 최근 플레이 TOP 10</h3>
+    <div class="row row-cols-2 row-cols-md-5 g-3 mb-5 text-center">
+        {% for game in stats.last_played %}
+        <div class="col">
+            <a href="https://store.steampowered.com/app/{{ game.appid }}" target="_blank" class="card game-card bg-dark text-white shadow-sm">
+                <img src="{{ game.img_url }}" class="game-img" alt="{{ game.name }}" onerror="this.style.display='none'">
+                <div class="card-body p-2">
+                    <p class="card-title small fw-bold text-truncate mb-1">{{ game.name }}</p>
+                    <p class="card-text small text-info mb-0" style="font-size: 0.75rem;">
+                        {{ game.last_played_date }} <span class="text-secondary mx-1">|</span> {{ game.playtime_hours }}h
+                    </p>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h3 class="text-info mb-4">🔥 플레이 시간 전체 순위</h3>
+    <div class="row row-cols-2 row-cols-md-6 g-3 text-center" id="game-container">
+        {% for game in stats.most_played %}
+        <div class="col game-item {% if loop.index > 12 %}d-none{% endif %}">
+            <a href="https://store.steampowered.com/app/{{ game.appid }}" target="_blank" class="card game-card bg-dark text-white shadow-sm">
+                <img src="{{ game.img_url }}" class="game-img" alt="{{ game.name }}" onerror="this.style.display='none'">
+                <div class="card-body p-2">
+                    <p class="card-title small fw-bold text-truncate mb-1">{{ game.name }}</p>
+                    <p class="card-text small text-info mb-0">{{ game.playtime_hours }}h</p>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="text-center mt-4 mb-5">
+        <button id="load-more-btn" class="btn btn-outline-info px-5">데이터 더보기</button>
+    </div>
+
+    <hr class="border-secondary my-5 opacity-25">
+
+    <h3 class="text-info mb-4 text-center">📊 데이터 상세 분석</h3>
+    <div class="row g-4 mb-4">
+        <div class="col-md-8">
+            <div class="chart-container shadow">
+                <h5 class="text-info mb-4 text-center">📈 지난 1년 간 월별 플레이 기록</h5>
+                <div style="min-height: 350px;">
+                    <canvas id="recentPlayChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 shadow p-4 text-center" style="background: linear-gradient(135deg, #2a475e 0%, #1b2838 100%);">
+                <h5 class="text-info mb-4">라이브러리 리포트</h5>
+                <div class="d-flex flex-column justify-content-around h-100">
+                    <div>
+                        <small class="text-secondary d-block mb-1">총 보유 게임</small>
+                        <h2 class="fw-bold">{{ stats.summary.total_count }}개</h2>
+                    </div>
+                    <hr class="border-secondary opacity-25">
+                    <div>
+                        <small class="text-secondary d-block mb-1">총 플레이 시간</small>
+                        <h2 class="fw-bold text-primary">{{ "{:,}".format(stats.summary.total_hours) }}시간</h2>
+                    </div>
+                    <hr class="border-secondary opacity-25">
+                    <div class="row">
+                        <div class="col-6 border-end border-secondary border-opacity-25">
+                            <small class="text-secondary d-block mb-1">평균 시간</small>
+                            <h5 class="text-info mb-0">{{ stats.summary.avg_hours }}h</h5>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-secondary d-block mb-1">실행 비율</small>
+                            <h5 class="text-success mb-0">{{ stats.summary.completion_rate }}%</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="chart-container shadow text-center">
+                <h5 class="text-info mb-4">⭐ 플레이 시간 TOP 10 비중</h5>
+                <div style="width: 100%; max-width: 500px; margin: 0 auto;">
+                    <canvas id="mostPlayedChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="howToUseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">📖 사용 방법</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ol class="lh-lg">
+                    <li>스팀 계정의 <strong>ID64(17자리 숫자)</strong> 또는 <strong>커스텀 아이디</strong>를 입력하세요.</li>
+                    <li>스팀 설정에서 <strong>프로필</strong> 및 <strong>게임 세부 정보</strong>가 <span class="text-info">'공개'</span>여야 합니다.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let currentVisible = 12;
+        const items = document.querySelectorAll('.game-item');
+        const btn = document.getElementById('load-more-btn');
+        if (btn) {
+            if (items.length <= currentVisible) btn.style.display = 'none';
+            btn.addEventListener('click', function() {
+                let count = 0;
+                for (let i = currentVisible; i < items.length; i++) {
+                    if (count < 12) { items[i].classList.remove('d-none'); count++; }
+                }
+                currentVisible += count;
+                if (currentVisible >= items.length) btn.style.display = 'none';
+            });
+        }
+        {% if stats %}
+        const mostPlayedCtx = document.getElementById('mostPlayedChart');
+        if (mostPlayedCtx) {
+            new Chart(mostPlayedCtx, {
+                type: 'pie',
+                data: {
+                    labels: {{ stats.chart_most_played_labels | tojson }},
+                    datasets: [{
+                        data: {{ stats.chart_most_played_data | tojson }},
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#4dc9f6', '#f67019', '#f53794', '#537bc4']
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: 'white' } } } }
+            });
+        }
+        const recentPlayCtx = document.getElementById('recentPlayChart');
+        if (recentPlayCtx) {
+            new Chart(recentPlayCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ stats.chart_recent_play_labels | tojson }},
+                    datasets: [{
+                        label: '시간(h)',
+                        data: {{ stats.chart_recent_play_data | tojson }},
+                        backgroundColor: 'rgba(102, 192, 244, 0.7)',
+                        borderColor: '#66c0f4',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: 'white' }, grid: { display: false } },
+                        y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' }, beginAtZero: true }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        {% endif %}
+    });
+</script>
+</body>
+</html>

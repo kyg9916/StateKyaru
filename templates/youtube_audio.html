@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>멀티 음원 추출기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); }
+        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        input[type="radio"]:checked + label { border-color: #ef4444; background-color: #fef2f2; color: #b91c1c; }
+        .input-animate { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="glass p-8 rounded-[2rem] shadow-2xl w-full max-w-lg">
+        <div class="text-center mb-8">
+            <div class="bg-gradient-to-tr from-red-500 to-pink-500 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg rotate-3">
+                <i class="fa-brands fa-youtube text-white text-4xl"></i>
+            </div>
+            <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">Multi Converter</h1>
+            <p class="text-gray-500 text-sm mt-2">링크를 추가하고 한 번에 추출하세요!</p>
+        </div>
+
+        <form onsubmit="event.preventDefault(); showStatus();" class="space-y-6">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-bold text-gray-700 ml-1">유튜브 주소 입력</label>
+                    <div class="space-x-1">
+                        <button type="button" onclick="addInputs(4)" class="text-[10px] bg-gray-200 hover:bg-gray-300 text-gray-600 px-2 py-1 rounded-md transition">다중(+4)</button>
+                        <button type="button" onclick="addInputs(1)" class="text-[10px] bg-red-100 hover:bg-red-200 text-red-600 px-2 py-1 rounded-md font-bold transition">추가(+1)</button>
+                    </div>
+                </div>
+
+                <div id="input-container" class="space-y-2">
+                    <div class="relative input-animate">
+                        <span class="absolute left-4 top-3.5 text-red-400 text-xs font-bold">1</span>
+                        <input type="url" name="urls[]" placeholder="https://www.youtube.com/watch?v=..."
+                            class="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-red-100 focus:border-red-400 outline-none transition text-sm" required>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-3 ml-1">추출 포맷 선택</label>
+                <div class="mt-4 grid grid-cols-1 gap-2">
+                    <input type="radio" id="fmt_mp3" name="format" value="mp3" class="hidden" checked>
+                    <label for="fmt_mp3" class="block bg-blue-50 p-3 rounded-xl border border-blue-100 cursor-pointer hover:bg-blue-100 transition">
+                        <p class="text-xs text-blue-800 leading-relaxed"><span class="font-bold text-blue-900">🎵 MP3:</span> 표준 고음질 (192kbps)</p>
+                    </label>
+                    <input type="radio" id="fmt_m4a" name="format" value="m4a" class="hidden">
+                    <label for="fmt_m4a" class="block bg-purple-50 p-3 rounded-xl border border-purple-100 cursor-pointer hover:bg-purple-100 transition">
+                        <p class="text-xs text-purple-800 leading-relaxed"><span class="font-bold text-purple-900">📱 M4A:</span> 아이폰/최신 기기 추천</p>
+                    </label>
+                    <input type="radio" id="fmt_wav" name="format" value="wav" class="hidden">
+                    <label for="fmt_wav" class="block bg-amber-50 p-3 rounded-xl border border-amber-100 cursor-pointer hover:bg-amber-100 transition">
+                        <p class="text-xs text-amber-800 leading-relaxed"><span class="font-bold text-amber-900">💿 WAV:</span> 원본급 대용량</p>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" id="submit-btn"
+                class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 transition duration-300 transform hover:-translate-y-1 flex items-center justify-center">
+                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> 추출 시작하기
+            </button>
+        </form>
+
+        <div id="status" class="hidden mt-8 p-6 bg-white/80 rounded-[2rem] border border-white text-center shadow-lg">
+            <img src="{{ url_for('static', filename='pink.gif') }}" alt="로딩 중"
+                 class="w-32 h-32 mx-auto mb-4 rounded-2xl object-cover shadow-md">
+            <div class="space-y-2">
+                <p class="text-lg font-bold text-pink-500 animate-bounce">✨ 음원을 열심히 굽고 있어요!</p>
+                <p class="text-xs text-gray-400">잠시만 기다려 주시면 다운로드가 시작됩니다.</p>
+            </div>
+        </div>
+
+        <div id="error-box" class="hidden mt-8 p-6 bg-red-50 border border-red-200 rounded-[2rem] text-center shadow-inner">
+            <div class="text-red-500 text-4xl mb-3"><i class="fa-solid fa-circle-exclamation"></i></div>
+            <p id="error-summary" class="text-red-700 font-bold mb-2"></p>
+            <button type="button" onclick="document.getElementById('debug-log').classList.toggle('hidden')"
+                    class="text-[10px] text-gray-400 underline mb-4 block mx-auto">개발자 상세 로그 확인</button>
+            <pre id="debug-log" class="hidden text-left bg-gray-900 text-green-400 p-3 rounded-lg text-[10px] overflow-x-auto max-h-40 mb-4"></pre>
+            <button type="button" onclick="location.reload()" class="text-sm font-bold text-red-600 bg-red-100 px-4 py-2 rounded-xl hover:bg-red-200 transition">다시 시도하기</button>
+        </div>
+
+        <div class="mt-4 text-center">
+    <button onclick="location.href='/'" class="text-xs font-bold text-blue-500 hover:underline">
+        <i class="fa-solid fa-chart-line mr-1"></i> 홈으로
+    </button>
+</div>
+
+<div class="mt-8 pt-6 border-t border-gray-100/50 text-center">
+    <p class="text-xs text-gray-400">Made with ❤️ by <span class="font-bold text-red-400">김윤겸</span></p>
+</div>
+    </div>
+
+    <script>
+    let inputCount = 1;
+    const MAX_INPUTS = 5;
+
+    function addInputs(count) {
+        const container = document.getElementById('input-container');
+        if (inputCount >= MAX_INPUTS) return;
+        const available = MAX_INPUTS - inputCount;
+        const toAdd = Math.min(count, available);
+
+        for (let i = 0; i < toAdd; i++) {
+            inputCount++;
+            const newDiv = document.createElement('div');
+            newDiv.className = 'relative input-animate';
+            newDiv.innerHTML = `
+                <span class="absolute left-4 top-3.5 text-gray-400 text-xs font-bold">${inputCount}</span>
+                <input type="url" name="urls[]" placeholder="추가 링크를 입력하세요"
+                    class="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-red-100 focus:border-red-400 outline-none transition text-sm">
+                <button type="button" class="absolute right-3 top-3.5 text-gray-300 hover:text-red-400 transition" onclick="removeInput(this)">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+            container.appendChild(newDiv);
+        }
+    }
+
+    function removeInput(button) {
+        button.parentElement.remove();
+        inputCount--;
+        document.querySelectorAll('#input-container span').forEach((span, idx) => { span.textContent = idx + 1; });
+    }
+
+    function showStatus() {
+        // 1. 상태창 표시 (애니메이션 이미지 포함)
+        document.getElementById('error-box').classList.add('hidden');
+        document.getElementById('status').classList.remove('hidden');
+
+        // 2. 버튼 상태 변경
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.classList.replace('from-red-500', 'from-gray-500');
+        btn.classList.replace('to-red-600', 'to-gray-600');
+        btn.innerHTML = '<i class="fa-solid fa-hammer mr-2"></i> 준비 중...';
+
+        // 3. 문구 수정 (개발 중 안내)
+        const statusText = document.querySelector('#status p.text-lg');
+        const subText = document.querySelector('#status p.text-xs');
+
+        statusText.innerText = "🚧 현재 기능 개발 중이에요! 🚧";
+        statusText.classList.replace('text-pink-500', 'text-amber-500'); // 색상을 경고색으로 변경
+        subText.innerHTML = "Render 환경에서의 안정적인 추출을 위해<br>열심히 코드를 굽고 있어요. 조금만 기다려 주세요!";
+
+        // (옵션) 5초 뒤에 다시 시도할 수 있도록 리셋하고 싶다면 아래 주석을 해제하세요.
+        /*
+        setTimeout(() => {
+            document.getElementById('status').classList.add('hidden');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-2"></i> 추출 시작하기';
+            btn.classList.replace('from-gray-500', 'from-red-500');
+            btn.classList.replace('to-gray-600', 'to-red-600');
+        }, 5000);
+        */
+    }
+    </script>
+</body>
+</html>
