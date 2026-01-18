@@ -55,7 +55,8 @@ class Post(db.Model):
     category = db.Column(db.String(50))
     category_class = db.Column(db.String(20))
     title = db.Column(db.String(100), nullable=False)
-    content = db.Column(db.Text(4294967295)) # LONGTEXT
+    # 💡 숫자를 지우고 그냥 db.Text만 남겨주세요. PostgreSQL에서는 이게 무제한입니다!
+    content = db.Column(db.Text)
     author = db.Column(db.String(50))
     date = db.Column(db.String(20))
     views = db.Column(db.Integer, default=0)
