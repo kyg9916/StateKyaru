@@ -16,8 +16,11 @@ app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
 database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    # [배포 환경] Render의 PostgreSQL 연결
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace("postgres://", "postgresql://", 1)
+    # 만약 주소가 postgres://로 시작하면 postgresql://로 바꿔라
+    if database_url.startswith("postgres://"):
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace("postgres://", "postgresql://", 1)
+    else:
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     # [로컬 환경] 내 컴퓨터의 MySQL 연결
     # 로컬일 때만 DB 자동 생성 시도
