@@ -37,6 +37,11 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# [수정 포인트!] 이 위치에 아래 3줄을 추가하세요.
+# 서버가 켜질 때 어떤 방식(Gunicorn 등)으로 켜지든 테이블을 만들게 합니다.
+with app.app_context():
+    db.create_all()
+
 # 3. 블루프린트 등록
 app.register_blueprint(services_bp)
 
