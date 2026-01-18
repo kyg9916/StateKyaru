@@ -178,7 +178,6 @@ def taro_page():
 
 @services_bp.route('/download', methods=['POST'])
 def download():
-    def download():
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         work_dir = os.path.join(DOWNLOAD_FOLDER, timestamp)
         os.makedirs(work_dir, exist_ok=True)
