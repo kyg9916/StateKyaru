@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ post.title }} - 상세보기</title>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f9f9f9; padding: 50px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+
+        /* 헤더 부분 */
+        .post-header { border-bottom: 2px solid #f4f4f4; padding-bottom: 20px; margin-bottom: 30px; }
+        .category { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+        .cat-qna { background: #e9fac8; color: #94d82d; }
+        .cat-bug { background: #ffe3e3; color: #f03e3e; }
+        .cat-idea { background: #f3d9fa; color: #ae3ec9; }
+
+        .post-title { font-size: 28px; margin: 10px 0; font-weight: bold; }
+        .post-info { color: #999; font-size: 14px; }
+
+        /* 내용 부분 */
+        .post-content { line-height: 1.8; min-height: 200px; font-size: 16px; color: #444; white-space: pre-wrap; }
+
+        /* 하단 메뉴 */
+        .footer-menu { margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .btn-group { display: flex; gap: 15px; }
+        .back-link { text-decoration: none; color: #888; font-size: 14px; }
+        .edit-btn { color: #5c7cfa; text-decoration: none; font-weight: bold; }
+        .delete-btn { background: none; border: none; color: #f03e3e; cursor: pointer; font-family: inherit; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="post-header">
+            <span class="category {{ post.category_class }}">{{ post.category }}</span>
+            <h1 class="post-title">{{ post.title }}</h1>
+            <div class="post-info">
+                작성자: <strong>{{ post.author }}</strong> &nbsp; | &nbsp; 날짜: {{ post.date }} &nbsp; | &nbsp; 조회: {{ post.views }}
+            </div>
+        </div>
+
+        <div class="post-content">{{ post.content|safe }}</div>
+
+        <div style="margin-top: 50px; border-top: 1px solid #eee; padding-top: 30px;">
+    <h3>댓글 ({{ post.comments|length }})</h3>
+
+    <div style="margin-bottom: 30px;">
+        {% for comment in post.comments %}
+        <div style="padding: 15px 0; border-bottom: 1px solid #f4f4f4;">
+            <div style="font-size: 14px; margin-bottom: 5px;">
+                <strong>{{ comment.author }}</strong>
+                <span style="color: #ccc; margin-left: 10px;">{{ comment.date }}</span>
+            </div>
+            <div style="font-size: 15px; color: #555;">{{ comment.content }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <form action="{{ url_for('add_comment', post_id=post.id) }}" method="POST"
+          style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+        <div style="margin-bottom: 10px;">
+            <input type="text" name="author" placeholder="이름" required
+                   style="width: 150px; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <textarea name="content" placeholder="댓글을 남겨보세요" required
+                      style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: none; height: 60px;"></textarea>
+            <button type="submit" style="padding: 0 20px; background: #5c7cfa; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                등록
+            </button>
+        </div>
+    </form>
+</div>
+
+        <div class="footer-menu">
+            <a href="{{ url_for('index') }}" class="back-link">← 목록으로 돌아가기</a>
+            <div class="btn-group">
+                <a href="{{ url_for('edit_post', post_id=post.id) }}" class="edit-btn">수정</a>
+                <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                    <button type="submit" class="delete-btn">삭제</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

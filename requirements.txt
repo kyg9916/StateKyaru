@@ -1,6 +1,9 @@
 discord.py
 google-genai
 flask
+Flask-SQLAlchemy
+pymysql
+psycopg2-binary
 requests
 gunicorn
 yt_dlp
