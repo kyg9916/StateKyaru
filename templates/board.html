@@ -127,20 +127,20 @@
 
 <div class="main-wrapper">
     <aside class="sidebar">
-        <h3>카테고리</h3>
-        <ul class="category-list">
-            <li><a href="/board" class="category-link {{ 'active' if not current_category else '' }}">전체보기</a></li>
-            <li><a href="/board?category=게임" class="category-link {{ 'active' if current_category == '게임' else '' }}">🎮 게임</a></li>
-            <li><a href="/board?category=애니·만화·서브컬처" class="category-link {{ 'active' if current_category == '애니·만화·서브컬처' else '' }}">🌸 애니·만화</a></li>
-            <li><a href="/board?category=병맛더빙·패러디" class="category-link {{ 'active' if current_category == '병맛더빙·패러디' else '' }}">🤣 병맛더빙</a></li>
-            <li><a href="/board?category=동물" class="category-link {{ 'active' if current_category == '동물' else '' }}">🐱 동물</a></li>
-            <li><a href="/board?category=음악·노래" class="category-link {{ 'active' if current_category == '음악·노래' else '' }}">🎵 음악·노래</a></li>
-            <li><a href="/board?category=인터넷밈·코메디" class="category-link {{ 'active' if current_category == '인터넷밈·코메디' else '' }}">🃏 인터넷밈</a></li>
-            <li><a href="/board?category=해외반응·문화차이" class="category-link {{ 'active' if current_category == '해외반응·문화차이' else '' }}">🌎 해외반응</a></li>
-            <li><a href="/board?category=기술·IT·코딩" class="category-link {{ 'active' if current_category == '기술·IT·코딩' else '' }}">💻 기술·IT</a></li>
-            <li><a href="/board?category=기타·혼합" class="category-link {{ 'active' if current_category == '기타·혼합' else '' }}">📂 기타·혼합</a></li>
-        </ul>
-    </aside>
+    <h3>카테고리</h3>
+    <ul class="category-list">
+        <li><a href="/board" class="category-link {{ 'active' if not current_category else '' }}">전체보기</a></li>
+        <li><a href="/board?category=🎮 게임" class="category-link {{ 'active' if current_category == '🎮 게임' else '' }}">🎮 게임</a></li>
+        <li><a href="/board?category=🌸 애니·만화" class="category-link {{ 'active' if current_category == '🌸 애니·만화' else '' }}">🌸 애니·만화</a></li>
+        <li><a href="/board?category=🤣 병맛더빙" class="category-link {{ 'active' if current_category == '🤣 병맛더빙' else '' }}">🤣 병맛더빙</a></li>
+        <li><a href="/board?category=🐱 동물" class="category-link {{ 'active' if current_category == '🐱 동물' else '' }}">🐱 동물</a></li>
+        <li><a href="/board?category=🎵 음악·노래" class="category-link {{ 'active' if current_category == '🎵 음악·노래' else '' }}">🎵 음악·노래</a></li>
+        <li><a href="/board?category=🃏 인터넷밈" class="category-link {{ 'active' if current_category == '🃏 인터넷밈' else '' }}">🃏 인터넷밈</a></li>
+        <li><a href="/board?category=🌎 해외반응" class="category-link {{ 'active' if current_category == '🌎 해외반응' else '' }}">🌎 해외반응</a></li>
+        <li><a href="/board?category=💻 기술·IT" class="category-link {{ 'active' if current_category == '💻 기술·IT' else '' }}">💻 기술·IT</a></li>
+        <li><a href="/board?category=📂 기타·혼합" class="category-link {{ 'active' if current_category == '📂 기타·혼합' else '' }}">📂 기타·혼합</a></li>
+    </ul>
+</aside>
 
     <div class="content-area">
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 35px;">
@@ -210,9 +210,19 @@
         </a>
     </div>
 
-    <a href="{{ url_for('write') }}" class="write-btn" style="background: var(--accent-color); color: white; text-decoration: none; padding: 12px 28px; border-radius: 15px; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 12px rgba(92, 124, 250, 0.2);">
+    <div style="display: flex; gap: 10px;">
+    {% if is_admin %}
+    <form action="{{ url_for('delete_all_posts') }}" method="POST" onsubmit="return confirm('⚠️ 경고: 모든 게시글과 댓글이 사라집니다. 정말 삭제할까요?');">
+        <button type="submit" style="background: #ff6b6b; color: white; border: none; padding: 12px 20px; border-radius: 15px; font-weight: bold; cursor: pointer; transition: 0.3s;">
+            🔥 전체 삭제
+        </button>
+    </form>
+    {% endif %}
+
+    <a href="{{ url_for('write') }}" class="write-btn">
         ✎ 글쓰기
     </a>
+</div>
 </div>
 
         <div class="pagination">

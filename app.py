@@ -78,21 +78,38 @@ with app.app_context():
 @app.route('/')
 def main_home(): return render_template('index.html')
 
+
 @app.route('/board')
 def index():
+    # ⭐ 1. 주소창에 ?mode=plum 이 있는지 확인하는 코드 추가
+    is_admin = request.args.get('mode') == 'plum'
+
     page = request.args.get('page', 1, type=int)
     keyword = request.args.get('search', '')
     category = request.args.get('category', '')
     sort = request.args.get('sort', 'new')
+
     query = Post.query
     if keyword: query = query.filter(Post.title.contains(keyword))
     if category: query = query.filter(Post.category == category)
-    if sort == 'views': query = query.order_by(Post.views.desc())
-    else: query = query.order_by(Post.id.desc())
+
+    if sort == 'views':
+        query = query.order_by(Post.views.desc())
+    else:
+        query = query.order_by(Post.id.desc())
+
     pagination = query.paginate(page=page, per_page=10, error_out=False)
     posts = pagination.items
     for post in posts: post.thumbnail = get_first_image(post.content)
-    return render_template('board.html', posts=posts, pagination=pagination, keyword=keyword, current_category=category, current_sort=sort)
+
+    # ⭐ 2. return 할 때 마지막에 is_admin=is_admin 을 꼭 넣어주세요!
+    return render_template('board.html',
+                           posts=posts,
+                           pagination=pagination,
+                           keyword=keyword,
+                           current_category=category,
+                           current_sort=sort,
+                           is_admin=is_admin)
 
 @app.route('/write', methods=['GET', 'POST'])
 def write():
@@ -131,6 +148,20 @@ def add_comment(post_id):
     new_comment = Comment(post_id=post_id, content=request.form.get('content'), author=request.form.get('author'), date=datetime.now().strftime('%Y-%m-%d %H:%M'))
     db.session.add(new_comment); db.session.commit()
     return redirect(url_for('post_detail', post_id=post_id))
+
+# app.py 하단 적당한 곳에 추가
+@app.route('/board/delete_all', methods=['POST'])
+def delete_all_posts():
+    try:
+        # 1. 모든 댓글 먼저 삭제 (참조 무결성 때문!)
+        Comment.query.delete()
+        # 2. 모든 게시글 삭제
+        Post.query.delete()
+        db.session.commit()
+        return redirect(url_for('index'))
+    except Exception as e:
+        db.session.rollback()
+        return f"삭제 중 에러 발생: {e}"
 
 @app.route('/setup-db')
 def setup_db():
