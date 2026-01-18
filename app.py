@@ -37,11 +37,6 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# [수정 포인트!] 이 위치에 아래 3줄을 추가하세요.
-# 서버가 켜질 때 어떤 방식(Gunicorn 등)으로 켜지든 테이블을 만들게 합니다.
-with app.app_context():
-    db.create_all()
-
 # 3. 블루프린트 등록
 app.register_blueprint(services_bp)
 
@@ -73,6 +68,10 @@ class Comment(db.Model):
     content = db.Column(db.Text, nullable=False)
     author = db.Column(db.String(50))
     date = db.Column(db.String(20))
+
+# ⭐ 바로 여기! 모델 정의가 끝난 직후에 배치하세요.
+with app.app_context():
+    db.create_all()
 
 # [라우트 함수들 동일...]
 @app.route('/')
@@ -131,6 +130,14 @@ def add_comment(post_id):
     new_comment = Comment(post_id=post_id, content=request.form.get('content'), author=request.form.get('author'), date=datetime.now().strftime('%Y-%m-%d %H:%M'))
     db.session.add(new_comment); db.session.commit()
     return redirect(url_for('post_detail', post_id=post_id))
+
+@app.route('/setup-db')
+def setup_db():
+    try:
+        db.create_all()
+        return "✅ 데이터베이스 테이블 생성 완료!"
+    except Exception as e:
+        return f"❌ 에러 발생: {e}"
 
 # 8. 실행
 if __name__ == '__main__':
