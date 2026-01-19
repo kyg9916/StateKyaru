@@ -1,152 +1,74 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <title>멤버십 게시판 - 디스코드 상태알라미</title>
-    <style>
-        /* 변수 설정 - 메인 index.html과 통일 */
-        :root {
-            --accent-color: #5c7cfa;
-            --text-color: #333;
-            --card-bg: #ffffff;
-            --bg-color: #f9f9f9;
-            --header-height: 70px; /* 헤더 높이 고정 */
-        }
+{% extends "basetwo.html" %}
 
-        /* 기본 레이아웃 - 헤더 높이만큼 여백 부여 */
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            color: var(--text-color);
-            background-color: var(--bg-color);
-            margin: 0;
-            padding-top: calc(var(--header-height) + 30px);
-        }
+{% block extra_style %}
+    /* 사이드바 스타일 - 기존 코드 그대로 */
+    .sidebar {
+        flex: 0 0 auto; min-width: 200px; background: white; padding: 25px;
+        border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        position: sticky; top: calc(var(--header-height) + 20px);
+    }
+    .sidebar h3 { font-size: 17px; color: var(--accent-color); margin-top: 0; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid #f0f2ff; }
+    .category-list { list-style: none; padding: 0; margin: 0; }
+    .category-link {
+        text-decoration: none; color: #666; font-size: 14px; display: block;
+        padding: 12px 18px; border-radius: 12px; transition: 0.2s; margin-bottom: 4px;
+    }
+    .category-link:hover { background: #f0f2ff; color: var(--accent-color); padding-left: 22px; }
+    .category-link.active { background: var(--accent-color); color: white; font-weight: bold; box-shadow: 0 4px 10px rgba(92, 124, 250, 0.3); }
 
-        /* [수정] 헤더 네비게이션 - 메인 페이지 스타일로 최적화 */
-        .navbar {
-            background-color: rgba(255, 255, 255, 0.95) !important;
-            backdrop-filter: blur(10px); /* 반투명 효과 */
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border-bottom: 1px solid #eee;
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            display: flex; align-items: center; padding: 0 50px;
-            height: var(--header-height);
-        }
-        .navbar-brand {
-            font-weight: 800; color: var(--accent-color);
-            text-decoration: none; font-size: 1.4rem;
-            letter-spacing: -0.5px;
-            margin-right: 40px;
-        }
-        .navbar-nav { display: flex; gap: 25px; align-items: center; flex-grow: 1; }
-        .nav-link {
-            font-weight: 600; color: #555;
-            text-decoration: none; cursor: pointer; font-size: 15px;
-            transition: 0.2s;
-        }
-        .nav-link:hover { color: var(--accent-color); transform: translateY(-1px); }
-        .developer { font-size: 0.85rem; color: #aaa; margin-left: auto; font-weight: 500; }
+    /* 본문 영역 - 기존 코드 그대로 */
+    .content-area {
+        flex: 1; background: white; padding: 40px; border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03); min-width: 0;
+    }
 
-        /* 메인 정렬 (Flexbox) */
-        .main-wrapper {
-            display: flex;
-            max-width: 1400px;
-            margin: 0 auto;
-            gap: 30px;
-            padding: 0 20px 50px 20px;
-            align-items: flex-start;
-        }
+    /* 테이블 및 기타 스타일 */
+    .search-container { display: flex; justify-content: flex-end; }
+    .search-input { padding: 10px 20px; border: 1px solid #eee; border-radius: 30px; outline: none; width: 220px; background: #f8f9fa; transition: 0.3s; }
+    .search-input:focus { border-color: var(--accent-color); background: white; width: 280px; }
+    .search-btn { background: var(--accent-color); color: white; border: none; padding: 10px 20px; border-radius: 30px; margin-left: 8px; cursor: pointer; font-weight: bold; }
 
-        /* 사이드바 스타일 */
-        .sidebar {
-            flex: 0 0 auto;
-            min-width: 200px;
-            background: white;
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-            position: sticky;
-            top: calc(var(--header-height) + 20px);
-        }
-        .sidebar h3 { font-size: 17px; color: var(--accent-color); margin-top: 0; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 2px solid #f0f2ff; }
-        .category-list { list-style: none; padding: 0; margin: 0; }
-        .category-link {
-            text-decoration: none; color: #666; font-size: 14px; display: block;
-            padding: 12px 18px; border-radius: 12px; transition: 0.2s;
-            margin-bottom: 4px;
-        }
-        .category-link:hover { background: #f0f2ff; color: var(--accent-color); padding-left: 22px; }
-        .category-link.active { background: var(--accent-color); color: white; font-weight: bold; box-shadow: 0 4px 10px rgba(92, 124, 250, 0.3); }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { text-align: left; padding: 18px 12px; border-bottom: 2px solid #f8f9fa; color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+    td { padding: 20px 12px; border-bottom: 1px solid #fcfcfc; font-size: 15px; vertical-align: middle; }
 
-        /* 본문 영역 */
-        .content-area {
-            flex: 1;
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-            min-width: 0;
-        }
+    .thumb-img { width: 55px; height: 55px; border-radius: 12px; object-fit: cover; margin-right: 15px; border: 1px solid #f0f0f0; }
+    .category-tag { font-weight: 700; font-size: 10px; padding: 3px 8px; border-radius: 6px; margin-right: 10px; background: #f1f3f5; color: #495057; }
 
-        /* 테이블 및 기타 스타일은 기존과 동일하되 여백만 소폭 조정 */
-        .search-container { display: flex; justify-content: flex-end; }
-        .search-input { padding: 10px 20px; border: 1px solid #eee; border-radius: 30px; outline: none; width: 220px; background: #f8f9fa; transition: 0.3s; }
-        .search-input:focus { border-color: var(--accent-color); background: white; width: 280px; }
-        .search-btn { background: var(--accent-color); color: white; border: none; padding: 10px 20px; border-radius: 30px; margin-left: 8px; cursor: pointer; font-weight: bold; }
+    .footer-menu { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid #f8f9fa; align-items: center; }
+    .write-btn { background: var(--accent-color); color: white; text-decoration: none; padding: 12px 28px; border-radius: 15px; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 12px rgba(92, 124, 250, 0.2); }
+    .write-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(92, 124, 250, 0.3); }
 
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th { text-align: left; padding: 18px 12px; border-bottom: 2px solid #f8f9fa; color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-        td { padding: 20px 12px; border-bottom: 1px solid #fcfcfc; font-size: 15px; vertical-align: middle; }
+    .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 30px; }
+    .page-num { padding: 10px 16px; color: #777; text-decoration: none; border-radius: 12px; background: #f8f9fa; transition: 0.2s; }
+    .page-num:hover { background: #e9ecef; }
+    .page-num.active { background: var(--accent-color); color: white; font-weight: bold; }
+{% endblock %}
 
-        .thumb-img { width: 55px; height: 55px; border-radius: 12px; object-fit: cover; margin-right: 15px; border: 1px solid #f0f0f0; }
-        .category-tag { font-weight: 700; font-size: 10px; padding: 3px 8px; border-radius: 6px; margin-right: 10px; background: #f1f3f5; color: #495057; }
-
-        .footer-menu { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid #f8f9fa; align-items: center; }
-        .write-btn { background: var(--accent-color); color: white; text-decoration: none; padding: 12px 28px; border-radius: 15px; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 12px rgba(92, 124, 250, 0.2); }
-        .write-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(92, 124, 250, 0.3); }
-
-        .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 30px; }
-        .page-num { padding: 10px 16px; color: #777; text-decoration: none; border-radius: 12px; background: #f8f9fa; transition: 0.2s; }
-        .page-num:hover { background: #e9ecef; }
-        .page-num.active { background: var(--accent-color); color: white; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-<nav class="navbar">
-    <a class="navbar-brand" href="/">📡 상태알라미 v6.7</a>
-    <div class="navbar-nav">
-        <a class="nav-link" style="color: #4dabf7;" onclick="location.href='/steam_stats'">스팀 통계 🎮</a>
-        <a class="nav-link" style="color: #ff6b6b;" onclick="location.href='/youtube'">유튜브 다운 🎵</a>
-        <a class="nav-link" style="color: #51cf66;" onclick="location.href='/lotto'">로또 번호 😎</a>
-        <a class="nav-link" style="color: #cc5de8;" onclick="location.href='/rollet'">벅샷룰렛 🎰</a>
-        <a class="nav-link" style="color: #fcc419;" onclick="location.href='/lucky'">타로 운세 ✨</a>
-    </div>
-    <div class="developer">Developer by. 김윤겸</div>
-</nav>
-
+{% block content %}
 <div class="main-wrapper">
     <aside class="sidebar">
-    <h3>카테고리</h3>
-    <ul class="category-list">
-        <li><a href="/board" class="category-link {{ 'active' if not current_category else '' }}">전체보기</a></li>
-        <li><a href="/board?category=🎮 게임" class="category-link {{ 'active' if current_category == '🎮 게임' else '' }}">🎮 게임</a></li>
-        <li><a href="/board?category=🌸 애니·만화" class="category-link {{ 'active' if current_category == '🌸 애니·만화' else '' }}">🌸 애니·만화</a></li>
-        <li><a href="/board?category=🤣 병맛더빙" class="category-link {{ 'active' if current_category == '🤣 병맛더빙' else '' }}">🤣 병맛더빙</a></li>
-        <li><a href="/board?category=🐱 동물" class="category-link {{ 'active' if current_category == '🐱 동물' else '' }}">🐱 동물</a></li>
-        <li><a href="/board?category=🎵 음악·노래" class="category-link {{ 'active' if current_category == '🎵 음악·노래' else '' }}">🎵 음악·노래</a></li>
-        <li><a href="/board?category=🃏 인터넷밈" class="category-link {{ 'active' if current_category == '🃏 인터넷밈' else '' }}">🃏 인터넷밈</a></li>
-        <li><a href="/board?category=🌎 해외반응" class="category-link {{ 'active' if current_category == '🌎 해외반응' else '' }}">🌎 해외반응</a></li>
-        <li><a href="/board?category=💻 기술·IT" class="category-link {{ 'active' if current_category == '💻 기술·IT' else '' }}">💻 기술·IT</a></li>
-        <li><a href="/board?category=📂 기타·혼합" class="category-link {{ 'active' if current_category == '📂 기타·혼합' else '' }}">📂 기타·혼합</a></li>
-    </ul>
-</aside>
+        <h3>카테고리</h3>
+        <ul class="category-list">
+            <li><a href="/board" class="category-link {{ 'active' if not current_category else '' }}">전체보기</a></li>
+            <li><a href="/board?category=🎮 게임" class="category-link {{ 'active' if current_category == '🎮 게임' else '' }}">🎮 게임</a></li>
+            <li><a href="/board?category=🌸 애니·만화" class="category-link {{ 'active' if current_category == '🌸 애니·만화' else '' }}">🌸 애니·만화</a></li>
+            <li><a href="/board?category=🤣 병맛더빙" class="category-link {{ 'active' if current_category == '🤣 병맛더빙' else '' }}">🤣 병맛더빙</a></li>
+            <li><a href="/board?category=🐱 동물" class="category-link {{ 'active' if current_category == '🐱 동물' else '' }}">🐱 동물</a></li>
+            <li><a href="/board?category=🎵 음악·노래" class="category-link {{ 'active' if current_category == '🎵 음악·노래' else '' }}">🎵 음악·노래</a></li>
+            <li><a href="/board?category=🃏 인터넷밈" class="category-link {{ 'active' if current_category == '🃏 인터넷밈' else '' }}">🃏 인터넷밈</a></li>
+            <li><a href="/board?category=🌎 해외반응" class="category-link {{ 'active' if current_category == '🌎 해외반응' else '' }}">🌎 해외반응</a></li>
+            <li><a href="/board?category=💻 기술·IT" class="category-link {{ 'active' if current_category == '💻 기술·IT' else '' }}">💻 기술·IT</a></li>
+            <li><a href="/board?category=📂 기타·혼합" class="category-link {{ 'active' if current_category == '📂 기타·혼합' else '' }}">📂 기타·혼합</a></li>
+        </ul>
+    </aside>
 
     <div class="content-area">
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 35px;">
             <div>
                 <h2 style="margin: 0; font-size: 26px; color: var(--accent-color); letter-spacing: -1px;">
-                    {{ current_category if current_category else '전체 소식' }} <span style="font-size: 16px; color: #adb5bd; margin-left: 8px;">{{ pagination.total }}개의 글</span>
+                    {{ current_category if current_category else '전체 소식' }} 
+                    <span style="font-size: 16px; color: #adb5bd; margin-left: 8px;">{{ pagination.total }}개의 글</span>
                 </h2>
                 <p style="color: #888; font-size: 14px; margin: 8px 0 0 0;">우리 친구들과 함께 재밌는 공간을 만들어가는 소통 공간입니다.</p>
             </div>
@@ -170,7 +92,7 @@
             <tbody>
                 {% for post in posts %}
                 <tr>
-                    <td style="color: #adb5bd; font-size: 13px; font-weight: 500;">{{ post.id }}</td>
+                    <td style="color: #adb5bd; font-size: 13px;">{{ post.id }}</td>
                     <td>
                         <div style="display: flex; align-items: center;">
                             {% if post.thumbnail %}
@@ -195,41 +117,36 @@
             </tbody>
         </table>
 
-        <div class="footer-menu" style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #f8f9fa;">
+        <div class="footer-menu">
+            <div class="sort-menu" style="font-size: 13px;">
+                <span style="color: #adb5bd;">정렬: </span>
+                <a href="{{ url_for('index', sort='new', category=current_category, search=keyword) }}"
+                   style="text-decoration: none; color: {{ '#5c7cfa' if current_sort == 'new' else '#adb5bd' }}; font-weight: {{ 'bold' if current_sort == 'new' else 'normal' }};">
+                   최신순
+                </a>
+                <span style="color: #eee; margin: 0 5px;">·</span>
+                <a href="{{ url_for('index', sort='views', category=current_category, search=keyword) }}"
+                   style="text-decoration: none; color: {{ '#5c7cfa' if current_sort == 'views' else '#adb5bd' }}; font-weight: {{ 'bold' if current_sort == 'views' else 'normal' }};">
+                   조회수순
+                </a>
+            </div>
 
-    <div class="sort-menu" style="font-size: 13px; font-weight: 500;">
-        <span style="color: #adb5bd;">정렬: </span>
-        <a href="{{ url_for('index', sort='new', category=current_category, search=keyword) }}"
-           style="text-decoration: none; color: {{ '#5c7cfa' if current_sort == 'new' else '#adb5bd' }}; font-weight: {{ 'bold' if current_sort == 'new' else 'normal' }};">
-           최신순
-        </a>
-        <span style="color: #eee; margin: 0 5px;">·</span>
-        <a href="{{ url_for('index', sort='views', category=current_category, search=keyword) }}"
-           style="text-decoration: none; color: {{ '#5c7cfa' if current_sort == 'views' else '#adb5bd' }}; font-weight: {{ 'bold' if current_sort == 'views' else 'normal' }};">
-           조회수순
-        </a>
-    </div>
-
-    <div style="display: flex; gap: 10px;">
-    {% if is_admin %}
-    <form action="{{ url_for('delete_all_posts') }}" method="POST" onsubmit="return confirm('⚠️ 경고: 모든 게시글과 댓글이 사라집니다. 정말 삭제할까요?');">
-        <button type="submit" style="background: #ff6b6b; color: white; border: none; padding: 12px 20px; border-radius: 15px; font-weight: bold; cursor: pointer; transition: 0.3s;">
-            🔥 전체 삭제
-        </button>
-    </form>
-    {% endif %}
-
-    <a href="{{ url_for('write') }}" class="write-btn">
-        ✎ 글쓰기
-    </a>
-</div>
-</div>
+            <div style="display: flex; gap: 10px;">
+                {% if is_admin %}
+                <form action="{{ url_for('delete_all_posts') }}" method="POST" onsubmit="return confirm('⚠️ 정말 삭제할까요?');">
+                    <button type="submit" style="background: #ff6b6b; color: white; border: none; padding: 12px 20px; border-radius: 15px; font-weight: bold; cursor: pointer;">
+                        🔥 전체 삭제
+                    </button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('write') }}" class="write-btn">✎ 글쓰기</a>
+            </div>
+        </div>
 
         <div class="pagination">
             {% if pagination.has_prev %}
                 <a href="{{ url_for('index', page=pagination.prev_num, search=keyword, category=current_category) }}" class="page-num">이전</a>
             {% endif %}
-
             {% for page_num in pagination.iter_pages() %}
                 {% if page_num %}
                     <a href="{{ url_for('index', page=page_num, search=keyword, category=current_category) }}" class="page-num {{ 'active' if page_num == pagination.page else '' }}">
@@ -237,12 +154,10 @@
                     </a>
                 {% endif %}
             {% endfor %}
-
             {% if pagination.has_next %}
                 <a href="{{ url_for('index', page=pagination.next_num, search=keyword, category=current_category) }}" class="page-num">다음</a>
             {% endif %}
         </div>
     </div>
 </div>
-</body>
-</html>
+{% endblock %}

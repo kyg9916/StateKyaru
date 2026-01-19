@@ -701,8 +701,13 @@ def get_steam_data(steam_id):
             # playtime_forever는 분(minute) 단위이므로 시간으로 변환
             game['playtime_hours'] = round(game.get('playtime_forever', 0) / 60, 1)
             last_time = game.get('rtime_last_played', 0)
-            game['last_played_date'] = datetime.datetime.fromtimestamp(last_time).strftime(
-                '%Y-%m-%d') if last_time > 0 else "기록 없음"
+
+            # 수정된 부분: datetime.datetime 대신 datetime만 사용
+            if last_time > 0:
+                game['last_played_date'] = datetime.fromtimestamp(last_time).strftime('%Y-%m-%d')
+            else:
+                game['last_played_date'] = "기록 없음"
+
             game['img_url'] = f"https://cdn.akamai.steamstatic.com/steam/apps/{game['appid']}/header.jpg"
 
         # 2. 정렬 및 필터링
