@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, render_template, request, redirect, url_for
+import requests
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import pymysql
@@ -8,6 +9,11 @@ import os
 
 # 1. 블루프린트 가져오기
 from services import services_bp
+
+print("YOUTUBE API 키 로드됨:", bool(os.environ.get('MY_YOUTUBE_KEY')))
+print("GEMINI API 키 로드됨:", bool(os.environ.get('MY_GEMINI_KEY')))
+print("STEAM API 키 로드됨:", bool(os.environ.get('MY_STEAM_KEY')))
+print("DISCORD WEBHOOK 로드됨:", bool(os.environ.get('DISCORD_WEBHOOK_URL')))
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
@@ -42,6 +48,7 @@ app.register_blueprint(services_bp)
 
 # --- 이하 모델 정의 및 라우트(동일함) ---
 # (Post, Comment 모델 정의 및 @app.route 코드들...)
+
 
 # 5. 유틸리티 함수
 def get_first_image(content):
@@ -78,6 +85,23 @@ with app.app_context():
 @app.route('/')
 def main_home(): return render_template('index.html')
 
+
+@app.route('/send_discord', methods=['POST'])
+def send_discord():
+    # 1. HTML에서 보낸 데이터를 받습니다.
+    data = request.json
+
+    # 2. 환경변수에 숨겨둔 진짜 디스코드 주소를 가져옵니다.
+    # (Render 설정창에 DISCORD_WEBHOOK_URL 이라는 이름으로 주소를 저장해두세요!)
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
+
+    if not webhook_url:
+        return {"status": "error", "message": "웹훅 주소가 설정되지 않았습니다."}, 500
+
+    # 3. 서버가 대신 디스코드로 쏩니다!
+    response = requests.post(webhook_url, json=data)
+
+    return {"status": "success"}, 204
 
 @app.route('/board')
 def index():

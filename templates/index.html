@@ -221,8 +221,6 @@ let isAFKMode = false;
 let isProcessingBack = false;
 // 잠수모드 실제 const AFK_TIMEOUT = 60 * 60 * 1000;
 const AFK_TIMEOUT = 60 * 60 * 1000;
-const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1458597916955381800/FjIDySDIfP-kZp1udUCL7o6pQN0pv7yJyz0KLiYcLrEm6FyrK10Z5Z9XJnNN0JpRGpxf";
-// 테스트용 https://discord.com/api/webhooks/1458643194270056489/Ec0iQFL8m-sCdPC7AI29wqq0Cq_LDiLeI8Z5Rsp0Yrh7UEY8ysftSdEF-NeYdKkTQBBp
 window.onload = function() {
     // 저장된 닉네임 불러오기
     const savedName = localStorage.getItem('userNickname');
@@ -311,7 +309,11 @@ function send(action, statusName) {
         }]
     };
 
-    fetch(DISCORD_WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(embedData) });
+    fetch("/send_discord", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(embedData)
+    });
 
     updateUI(nickname, info.icon, statusName, timestamp, statusMsg);
 

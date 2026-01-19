@@ -16,9 +16,22 @@ import matplotlib.font_manager as fm
 services_bp = Blueprint('services', __name__)
 
 # --- [공통 설정 및 키] ---
-MY_KEY = "AIzaSyDCW3boDxSfivSUHcrgJc6X9-rfe13Ba7g" # 유튜브 데이터 API 키
-GEMINI_API_KEY = os.environ.get("MY_GEMINI_KEY") or "AIzaSyD0vu4fiYirJ3FVkm-rOkfiXksET06N1Hc"
+# 1. 환경변수에서 값들을 먼저 다 가져옵니다.
+MY_KEY = os.environ.get("MY_YOUTUBE_KEY")
+GEMINI_API_KEY = os.environ.get("MY_GEMINI_KEY")
+STEAM_API_KEY = os.environ.get("MY_STEAM_KEY")
+
+# 2. [매우 중요] 가져온 값이 진짜 있는지 확인해봅니다.
+# 만약 파이참 설정이 안 먹혔다면 여기서 에러가 나서 우리가 알 수 있어요.
+if not GEMINI_API_KEY:
+    # 파이참 설정이 안 되었을 때를 대비한 임시 방편 (테스트용)
+    GEMINI_API_KEY = "AIzaSyD0vu4fiYirJ3FVkm-rOkfiXksET06N1Hc"
+    print("⚠️ 경고: 환경변수를 못 찾아서 코드에 적힌 키를 사용합니다.")
+
+# 3. 이제 클라이언트를 만듭니다.
 client_gemini = genai.Client(api_key=GEMINI_API_KEY)
+
+
 TEMP_AUDIO_DIR = 'temp_audio'
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -630,7 +643,7 @@ DOWNLOAD_FOLDER = "downloads"
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 GEMINI_API_KEY = os.environ.get("MY_GEMINI_KEY") or "AIzaSyD0vu4fiYirJ3FVkm-rOkfiXksET06N1Hc"
-STEAM_API_KEY = "C7FACE44079582DF54BB9AB26641E50B"
+STEAM_API_KEY = os.environ.get("MY_STEAM_KEY")
 client_gemini = genai.Client(api_key=GEMINI_API_KEY)
 
 KYARU_SYSTEM_PROMPT = """너는 게임 '프린세스 커넥트'의 '캬루'야.
