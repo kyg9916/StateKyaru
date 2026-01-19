@@ -21,16 +21,20 @@ GEMINI_API_KEY = os.environ.get("MY_GEMINI_KEY") or "AIzaSyD0vu4fiYirJ3FVkm-rOkf
 client_gemini = genai.Client(api_key=GEMINI_API_KEY)
 TEMP_AUDIO_DIR = 'temp_audio'
 
-# 1. 폰트 파일 경로 지정 (프로젝트 폴더 내 위치에 따라 수정하세요)
-# 예: 프로젝트 루트에 malgun.ttf가 있는 경우
-font_path = os.path.join(os.getcwd(), 'malgun.ttf')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+font_path = os.path.join(BASE_DIR, 'malgun.ttf')
 
-# 2. 폰트 이름 가져오기
-font_name = fm.FontProperties(fname=font_path).get_name()
+# 폰트 파일이 있는지 확인하고 로드
+if os.path.exists(font_path):
+    font_prop = fm.FontProperties(fname=font_path)
+    font_name = font_prop.get_name()
+    plt.rcParams['font.family'] = font_name
+else:
+    # 폰트 파일이 없을 때 서버가 죽지 않도록 기본 폰트 설정
+    plt.rcParams['font.family'] = 'sans-serif'
+    print(f"⚠️ 경고: {font_path} 파일을 찾을 수 없어 기본 폰트를 사용합니다.")
 
-# 3. Matplotlib에 설정
-plt.rcParams['font.family'] = font_name
-plt.rcParams['axes.unicode_minus'] = False # 마이너스 기호 깨짐 방지
+plt.rcParams['axes.unicode_minus'] = False
 
 # ==========================================
 # 1. 유튜브 댓글 여론 분석 기능 (기존 app.py에서 이동)
@@ -46,17 +50,16 @@ def is_korean(text):
 def get_wordcloud_image(all_top_words):
     if not all_top_words: return None
 
-    # 딕셔너리로 변환
     word_dict = dict(all_top_words)
 
-    # 워드클라우드 설정 개선 (색상, 크기, 단어수)
+    # 이 부분을 깔끔하게 수정했습니다!
     wc = WordCloud(
-        wc = WordCloud(font_path=font_path),
+        font_path=font_path,  # 위에서 잡은 변수 경로 사용
         background_color='white',
         width=1000, height=500,
-        max_words=100,  # 구름에 표시할 최대 단어 수
-        colormap='viridis',  # 색상 테마 (Plasma, Inferno 등 변경 가능)
-        prefer_horizontal=0.7  # 가로 쓰기 비율
+        max_words=100,
+        colormap='viridis',
+        prefer_horizontal=0.7
     ).generate_from_frequencies(word_dict)
 
     plt.figure(figsize=(10, 5))
