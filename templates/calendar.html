@@ -1,0 +1,278 @@
+{% extends "basetwo.html" %}
+
+{% block title %}초록자두의 협업 캘린더{% endblock %}
+
+{% block extra_style %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+<style>
+    /* 폰트 및 배경 설정 */
+    body, h3, input, select, button, span {
+        font-family: 'Malgun Gothic', '맑은 고딕', sans-serif !important;
+    }
+    body { background-color: #f0f2f5; }
+
+    /* 레이아웃 */
+    .calendar-wrapper { display: flex; gap: 20px; max-width: 1500px; margin: 20px auto; padding: 0 20px; align-items: flex-start; }
+
+    #calendar {
+        flex: 2.5; background: white; padding: 20px; border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e0e0e0; min-height: 700px;
+    }
+
+    #todo-section {
+        flex: 1; background: white; padding: 25px; border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e0e0e0;
+        position: sticky; top: 100px; max-height: 80vh; overflow-y: auto;
+    }
+
+    /* 할 일 완료 효과 */
+    .todo-done {
+        color: #999; text-decoration: line-through;
+        background: linear-gradient(to top, rgba(255, 255, 0, 0.5) 45%, transparent 45%);
+        padding: 0 3px; font-weight: bold;
+    }
+
+    /* 모달 */
+    #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; }
+    .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 20px; width: 380px; }
+
+    .btn-save { background: #5c7cfa; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .btn-delete { background: #ff6b6b; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .btn-close { background: #e9ecef; color: #495057; border: none; padding: 12px; border-radius: 8px; cursor: pointer; }
+
+    /* 주말 색상 */
+    .fc-day-sun a { color: #e03131 !important; }
+    .fc-day-sat a { color: #1971c2 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="calendar-wrapper">
+    <div id="calendar"></div>
+    <div id="todo-section">
+        <h3 id="selected-title" style="color: #5c7cfa; margin-top: 0;">📅 일정을 선택하세요</h3>
+        <hr style="border: 0; border-top: 1px solid #eee;">
+        <ul id="todo-list" style="list-style: none; padding: 0;"></ul>
+        <div id="add-todo-form" style="display:none; margin-top:20px; display: flex; gap: 5px;">
+            <input type="text" id="todo-input" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:5px;" placeholder="할 일 입력...">
+            <button onclick="saveTodo()" style="padding:10px; background:#5c7cfa; color:white; border:none; border-radius:5px; cursor:pointer;">등록</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-overlay">
+    <div class="modal-content">
+        <h3 id="modal-title" style="margin-bottom:20px;">일정 관리</h3>
+        <label style="font-size:12px; color:#666;">제목</label>
+        <input type="text" id="event-title" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ddd; border-radius:5px;">
+
+        <label style="font-size:12px; color:#666;">날짜</label>
+        <div style="display:flex; gap:5px; align-items:center; margin-bottom:15px;">
+            <input type="date" id="event-start-display" style="flex:1; padding:8px;">
+            ~
+            <input type="date" id="event-end" style="flex:1; padding:8px;">
+        </div>
+
+        <label style="font-size:12px; color:#666;">담당자</label>
+        <select id="event-user" onchange="checkDirectInput(this)" style="width:100%; padding:10px; margin-bottom:10px;">
+            <option value="초록자두">초록자두</option>
+            <option value="노빠꾸">노빠꾸</option>
+            <option value="Jinang">Jinang</option>
+            <option value="direct">직접 입력</option>
+        </select>
+        <input type="text" id="user-direct-input" style="display:none; width:100%; padding:10px; margin-bottom:10px;" placeholder="이름 입력">
+
+        <label style="font-size:12px; color:#666;">비밀번호</label>
+        <input type="password" id="event-password" style="width:100%; padding:10px; margin-bottom:20px;" placeholder="비밀번호">
+
+        <div style="display:flex; gap:10px;">
+            <button class="btn-save" style="flex:2;" onclick="saveEvent()">저장</button>
+            <button id="btn-delete-event" class="btn-delete" style="flex:1; display:none;" onclick="deleteEvent()">삭제</button>
+            <button class="btn-close" style="flex:1;" onclick="closeModal()">닫기</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+<script>
+    let currentEventId = null;
+    let calendar = null;
+    let editMode = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        // [1] 달력 높이 설정 (쉼표 추가 완료!)
+        height: 700,
+        contentHeight: 650,
+
+        // [2] 상단 버튼 설정 (이 위치에 들어갑니다!)
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,listMonth' // 월별달력, 목록보기 버튼
+        },
+
+        initialView: 'dayGridMonth',
+        locale: 'ko',
+        events: '/api/events',
+        selectable: true,
+        unselectAuto: false,
+
+        // [3] 구김 현상 방지 설정
+        dayMaxEvents: true,       // 일정이 많으면 +n개로 표시
+        handleWindowResize: true, // 창 크기 조절 시 자동 대응
+
+        // [4] 날짜 선택 시 (기존 유지)
+        select: function(info) {
+            editMode = false;
+            currentEventId = null;
+            document.getElementById('modal-title').innerText = "새 일정 등록";
+            document.getElementById('btn-delete-event').style.display = 'none';
+            document.getElementById('event-title').value = '';
+            document.getElementById('event-start-display').value = info.startStr;
+            document.getElementById('event-end').value = info.startStr;
+            document.getElementById('modal-overlay').style.display = 'block';
+        },
+
+        // [5] 일정 클릭 시 (기존 유지)
+        eventClick: function(info) {
+            if(info.event.display === 'background') return;
+            editMode = true;
+            currentEventId = info.event.id;
+            document.getElementById('modal-title').innerText = "일정 수정/삭제";
+            document.getElementById('btn-delete-event').style.display = 'block';
+            const pureTitle = info.event.title.split('] ').pop();
+            document.getElementById('event-title').value = pureTitle;
+            document.getElementById('event-start-display').value = info.event.startStr.split('T')[0];
+            if (info.event.endStr) {
+                let d = new Date(info.event.endStr); d.setDate(d.getDate() - 1);
+                document.getElementById('event-end').value = d.toISOString().split('T')[0];
+            } else {
+                document.getElementById('event-end').value = info.event.startStr.split('T')[0];
+            }
+            document.getElementById('modal-overlay').style.display = 'block';
+            document.getElementById('selected-title').innerText = "📝 " + info.event.title;
+            document.getElementById('add-todo-form').style.display = 'flex';
+            loadTodos(currentEventId);
+        }
+    });
+    calendar.render();
+});
+
+    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+    function checkDirectInput(select) {
+        const directInput = document.getElementById('user-direct-input');
+        directInput.style.display = (select.value === 'direct') ? 'block' : 'none';
+    }
+
+    function toggleTodo(todoId) {
+        fetch(`/api/todos/toggle/${todoId}`, { method: 'POST' }).then(() => loadTodos(currentEventId));
+    }
+
+    function deleteTodo(todoId) {
+        if(confirm("이 할 일을 삭제할까요?")) {
+            fetch(`/api/todos/delete/${todoId}`, { method: 'POST' }).then(() => loadTodos(currentEventId));
+        }
+    }
+
+    function saveEvent() {
+        const inputPw = document.getElementById('event-password').value;
+        if (!inputPw) { alert("비밀번호를 입력해야 합니다!"); return; }
+        const title = document.getElementById('event-title').value;
+        const start = document.getElementById('event-start-display').value;
+        let end = document.getElementById('event-end').value;
+        if (!title) { alert("제목을 입력해주세요!"); return; }
+
+        if (end && start !== end) {
+            let endDate = new Date(end);
+            endDate.setDate(endDate.getDate() + 1);
+            end = endDate.toISOString().split('T')[0];
+        } else { end = start; }
+
+        let user = document.getElementById('event-user').value;
+        if (user === 'direct') user = document.getElementById('user-direct-input').value || '익명';
+
+        const colorMap = { '초록자두': '#28a745', '노빠꾸': '#dc3545', 'Jinang': '#007bff', '기본': '#6c757d' };
+        const url = editMode ? `/api/events/modify/${currentEventId}` : '/api/events';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                title: title, start: start, end: end, user_name: user,
+                color: colorMap[user] || colorMap['기본'], password: inputPw
+            })
+        }).then(res => {
+            if (res.status === 401) alert("비밀번호가 틀렸습니다!");
+            else { calendar.refetchEvents(); closeModal(); document.getElementById('event-password').value = ''; }
+        });
+    }
+
+    function deleteEvent() {
+        const inputPw = document.getElementById('event-password').value;
+        if (!inputPw) { alert("비밀번호를 입력해야 삭제가 가능합니다!"); return; }
+        if (confirm("정말 이 일정을 삭제하시겠습니까?")) {
+            fetch(`/api/events/delete/${currentEventId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: inputPw })
+            }).then(res => {
+                if (res.status === 401) alert("비밀번호가 틀렸습니다!");
+                else if (res.ok) {
+                    calendar.refetchEvents();
+                    closeModal();
+                    document.getElementById('add-todo-form').style.display = 'none';
+                    document.getElementById('selected-title').innerText = "📅 일정을 선택하세요";
+                    document.getElementById('todo-list').innerHTML = '';
+                }
+            });
+        }
+    }
+
+    function editTodo(todoId, currentContent) {
+        const newContent = prompt("할 일을 수정하세요:", currentContent);
+        if (newContent && newContent !== currentContent) {
+            fetch(`/api/todos/edit/${todoId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ content: newContent })
+            }).then(() => loadTodos(currentEventId));
+        }
+    }
+
+    function loadTodos(eventId) {
+        fetch(`/api/todos/${eventId}`).then(res => res.json()).then(data => {
+            const list = document.getElementById('todo-list');
+            list.innerHTML = '';
+            data.forEach(todo => {
+                const timeInfo = todo.completed_at ? `<br><small style="color:gray;">완료: ${todo.completed_at}</small>` : '';
+                const textClass = todo.is_done ? 'todo-done' : '';
+                list.innerHTML += `
+                    <li style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;">
+                        <div style="flex: 1;">
+                            <input type="checkbox" ${todo.is_done ? 'checked' : ''} onchange="toggleTodo(${todo.id})">
+                            <span class="${textClass}">${todo.content}</span>${timeInfo}
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button onclick="editTodo(${todo.id}, '${todo.content}')" style="background:none; border:none; cursor:pointer;">✏️</button>
+                            <button onclick="deleteTodo(${todo.id})" style="background:none; border:none; color:red; cursor:pointer;">✕</button>
+                        </div>
+                    </li>`;
+            });
+        });
+    }
+
+    function saveTodo() {
+        const input = document.getElementById('todo-input');
+        if (!input.value) return;
+        fetch('/api/todos', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ event_id: currentEventId, content: input.value })
+        }).then(() => { input.value = ''; loadTodos(currentEventId); });
+    }
+</script>
+{% endblock %}

@@ -9,6 +9,7 @@ requests
 # --- AI 및 외부 API 관련 ---
 google-genai
 google-api-python-client
+google-auth  # 제미나이와 유튜브 API 인증을 위해 명시적으로 넣어주는 게 안전해요
 
 # --- 데이터 분석 및 시각화 관련 ---
 numpy
@@ -18,7 +19,7 @@ wordcloud
 soynlp
 
 # --- 미디어(유튜브/음원) 처리 관련 ---
-yt_dlp
+yt-dlp  # [수정] 언더바(_)가 아니라 하이픈(-)입니다.
 moviepy
 
 # --- 기타 ---

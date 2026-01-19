@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, render_template, request, redirect, url_for
-import requests
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
-import pymysql
-import re
+import sys
 import os
-
-# 1. 블루프린트 가져오기
+import re
+import pymysql
+import requests
+from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for
+from models import db, Post, Comment
 from services import services_bp
+from plum_plan import calendar_bp
+
+if 'calendar' in sys.modules:
+    del sys.modules['calendar']
 
 print("YOUTUBE API 키 로드됨:", bool(os.environ.get('MY_YOUTUBE_KEY')))
 print("GEMINI API 키 로드됨:", bool(os.environ.get('MY_GEMINI_KEY')))
@@ -18,18 +21,13 @@ print("DISCORD WEBHOOK 로드됨:", bool(os.environ.get('DISCORD_WEBHOOK_URL')))
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
 
-# 2. DB 연결 설정 및 로컬 환경 자동화
 database_url = os.environ.get('DATABASE_URL')
-
 if database_url:
-    # 만약 주소가 postgres://로 시작하면 postgresql://로 바꿔라
     if database_url.startswith("postgres://"):
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace("postgres://", "postgresql://", 1)
     else:
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
-    # [로컬 환경] 내 컴퓨터의 MySQL 연결
-    # 로컬일 때만 DB 자동 생성 시도
     try:
         db_setup_conn = pymysql.connect(host='localhost', user='root', password='1234')
         cursor = db_setup_conn.cursor()
@@ -37,14 +35,14 @@ else:
         db_setup_conn.close()
     except Exception as e:
         print(f"로컬 DB 생성 알림: {e}")
-
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1234@localhost:3306/greenplum_db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+db.init_app(app)
 
 # 3. 블루프린트 등록
 app.register_blueprint(services_bp)
+app.register_blueprint(calendar_bp)
 
 # --- 이하 모델 정의 및 라우트(동일함) ---
 # (Post, Comment 모델 정의 및 @app.route 코드들...)
@@ -54,32 +52,6 @@ app.register_blueprint(services_bp)
 def get_first_image(content):
     img_tag = re.search(r'<img [^>]*src="([^"]+)"', content)
     return img_tag.group(1) if img_tag else None
-
-# [이하 모델 정의 생략 - 초록자두님의 기존 코드와 동일]
-class Post(db.Model):
-    __tablename__ = 'board'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    category = db.Column(db.String(50))
-    category_class = db.Column(db.String(20))
-    title = db.Column(db.String(100), nullable=False)
-    # 💡 숫자를 지우고 그냥 db.Text만 남겨주세요. PostgreSQL에서는 이게 무제한입니다!
-    content = db.Column(db.Text)
-    author = db.Column(db.String(50))
-    date = db.Column(db.String(20))
-    views = db.Column(db.Integer, default=0)
-    comments = db.relationship('Comment', backref='post', cascade='all, delete-orphan')
-
-class Comment(db.Model):
-    __tablename__ = 'comments'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('board.id'), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    author = db.Column(db.String(50))
-    date = db.Column(db.String(20))
-
-# ⭐ 바로 여기! 모델 정의가 끝난 직후에 배치하세요.
-with app.app_context():
-    db.create_all()
 
 # [라우트 함수들 동일...]
 @app.route('/')
