@@ -26,8 +26,13 @@ font_path = os.path.join(BASE_DIR, 'malgun.ttf')
 
 # 폰트 파일이 있는지 확인하고 로드
 if os.path.exists(font_path):
+    # 1. 폰트 매니저에게 이 파일을 직접 등록 (이게 빠지면 시스템 폰트만 찾아요)
+    fm.fontManager.addfont(font_path)
+
     font_prop = fm.FontProperties(fname=font_path)
     font_name = font_prop.get_name()
+
+    # 2. 등록된 폰트 이름을 기본 패밀리로 설정
     plt.rcParams['font.family'] = font_name
 else:
     # 폰트 파일이 없을 때 서버가 죽지 않도록 기본 폰트 설정
@@ -385,8 +390,23 @@ def analyze_words_extended(comments_data, limit=100):
 def get_chart_image(top_words):
     if not top_words: return None
     df = pd.DataFrame(top_words, columns=['단어', '빈도수'])
+
     plt.figure(figsize=(8, 4))
+
+    # 폰트 속성을 직접 불러옵니다.
+    font_p = fm.FontProperties(fname=font_path)
+
+    # 차트를 그릴 때 x축 단어들에 폰트를 직접 입힙니다.
     plt.bar(df['단어'], df['빈도수'], color='skyblue')
+
+    # [핵심] X축의 글자들(단어)에 폰트 적용
+    plt.xticks(fontproperties=font_p)
+
+    # 제목이나 라벨도 깨진다면 똑같이 적용해줍니다.
+    plt.title("📈 키워드 빈도 TOP 10", fontproperties=font_p)
+    plt.xlabel("단어", fontproperties=font_p)
+    plt.ylabel("빈도수", fontproperties=font_p)
+
     img = BytesIO()
     plt.savefig(img, format='png', bbox_inches='tight')
     img.seek(0)
