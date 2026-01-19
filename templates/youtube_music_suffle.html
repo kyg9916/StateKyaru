@@ -106,9 +106,58 @@
         modal.classList.toggle('hidden', !show);
     }
 
-    function handleFormSubmit(event) {
+    async function handleFormSubmit(event) {
         event.preventDefault();
-        window.location.href = "/youtube_music_suffle_test";
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const loadingArea = document.getElementById('loading-area');
+        const mainForm = document.getElementById('main-form');
+
+        // 1. 현재 환경 확인 (로컬인지 체크)
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+        if (!isLocal) {
+            // [배포 환경] 안내 페이지로 이동
+            window.location.href = "/youtube_music_suffle_test";
+            return; // 함수 종료
+        }
+
+        // [로컬 환경] 실제 다운로드 로직 수행
+        mainForm.classList.add('hidden');
+        loadingArea.classList.remove('hidden');
+
+        try {
+            // Flask 서버로 데이터 전송 (/process 라우트로 요청)
+            const response = await fetch('/process', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('서버 작업 중 에러가 발생했습니다.');
+
+            // 서버에서 보낸 파일(blob) 받기
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            const mode = formData.get('mode');
+            // 모드에 따라 파일명 설정
+            a.download = (mode === '3') ? "my_music_collection.zip" : "merged_playlist.mp3";
+
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            alert("에러 발생: " + error.message);
+        } finally {
+            // 작업 완료 후 화면 복구
+            loadingArea.classList.add('hidden');
+            mainForm.classList.remove('hidden');
+        }
     }
 </script>
 {% endblock %}

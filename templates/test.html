@@ -137,7 +137,7 @@
             </div>
 
 <!--            <form id="download-form" onsubmit="startDownload(event)" class="space-y-8">-->
-            <form id="download-form" onsubmit="goToNotice(event)" class="space-y-8">
+            <form id="download-form" onsubmit="startDownload(event)" class="space-y-8">
 
                 <div class="space-y-3">
                     <div class="flex items-center justify-between px-1">
@@ -268,58 +268,87 @@
         }
 
         async function startDownload(event) {
-            event.preventDefault();
-            const form = document.getElementById('download-form');
-            const formData = new FormData(form);
-            const statusDiv = document.getElementById('status');
-            const errorBox = document.getElementById('error-box');
-            const btn = document.getElementById('submit-btn');
+    event.preventDefault(); // 페이지 새로고침 방지 (매우 중요!)
 
-            form.classList.add('hidden');
-            statusDiv.classList.remove('hidden');
-            btn.disabled = true;
+    const form = document.getElementById('download-form');
+    const formData = new FormData(form);
+    const statusDiv = document.getElementById('status');
+    const errorBox = document.getElementById('error-box');
+    const btn = document.getElementById('submit-btn');
 
-            try {
-                const response = await fetch('/download', { method: 'POST', body: formData });
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = (formData.get('mode') === 'video') ? 'video_pack.zip' : 'audio_pack.zip';
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    window.URL.revokeObjectURL(url);
-                    resetUI();
-                } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || '추출 중 문제가 발생했습니다.');
-                }
-            } catch (error) {
-                statusDiv.classList.add('hidden');
-                errorBox.classList.remove('hidden');
-                document.getElementById('error-summary').innerText = error.message;
+    // UI 변경
+    form.classList.add('hidden');
+    statusDiv.classList.remove('hidden');
+    btn.disabled = true;
+
+    try {
+        // 서버에 데이터 요청
+        const response = await fetch('/download', {
+            method: 'POST', // 반드시 POST여야 합니다
+            body: formData
+        });
+
+        if (response.ok) {
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let fileName = 'download.file';
+
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/);
+                if (fileNameMatch) fileName = decodeURIComponent(fileNameMatch[1]);
             }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            resetUI(); // 완료 후 폼 다시 보이기
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.message || '다운로드 실패');
         }
+    } catch (error) {
+        console.error(error);
+        statusDiv.classList.add('hidden');
+        errorBox.classList.remove('hidden');
+        document.getElementById('error-summary').innerText = error.message;
+    }
+}
 
         function goToNotice(event) {
-            event.preventDefault();
+    event.preventDefault();
 
-            const form = document.getElementById('download-form');
-            const statusDiv = document.getElementById('status');
-            const btn = document.getElementById('submit-btn');
+    const form = document.getElementById('download-form');
+    const statusDiv = document.getElementById('status');
+    const btn = document.getElementById('submit-btn');
 
-            // 로딩 화면을 살짝 보여줘서 자연스럽게 처리
-            form.classList.add('hidden');
-            statusDiv.classList.remove('hidden');
-            btn.disabled = true;
+    // 로딩 화면 표시
+    form.classList.add('hidden');
+    statusDiv.classList.remove('hidden');
+    btn.disabled = true;
 
-            setTimeout(() => {
-                // 이 부분을 이동하고 싶은 페이지 경로로 설정하세요!
-                location.href = '/youtube_music_suffle_test';
-            }, 1200);
+    // --- 환경 판단 로직 추가 ---
+    // 현재 접속한 주소(hostname)가 localhost인지 확인합니다.
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+    setTimeout(() => {
+        if (isLocal) {
+            // 로컬(내 컴퓨터)일 때는 실제 다운로드 로직 실행 (기존 startDownload 함수 내용)
+            console.log("로컬 환경: 다운로드를 시작합니다.");
+            startDownload(event);
+        } else {
+            // 배포 환경일 때는 안내 페이지로 이동
+            console.log("배포 환경: 안내 페이지로 이동합니다.");
+            location.href = '/youtube_music_suffle_test';
         }
+    }, 1200);
+}
+
     </script>
 </body>
 </html>

@@ -209,6 +209,19 @@
         </div>
     </div>
 
+    <div class="analysis-tabs mt-6">
+    <div class="card">
+        <h3 class="font-bold mb-4">📊 좋아요 구간별 댓글 분포</h3>
+        <img src="{{ dist_chart }}" class="img-fluid">
+        <p class="text-xs text-gray-400 mt-2 text-center">어떤 댓글이 시청자의 공감을 많이 얻었는지 보여줍니다.</p>
+    </div>
+    <div class="card">
+        <h3 class="font-bold mb-4">⏰ 시간대별 댓글 작성 현황</h3>
+        <img src="{{ time_chart }}" class="img-fluid">
+        <p class="text-xs text-gray-400 mt-2 text-center">시청자들이 주로 어느 시간에 활발하게 소통했는지 알려줍니다.</p>
+    </div>
+</div>
+
     <div class="card border-l-8 border-red-500">
         <h3 class="text-red-600 font-bold mb-4">⚠️ 관리 주의 필요 댓글</h3>
         {% if toxic_comments %}

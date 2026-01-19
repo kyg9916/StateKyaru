@@ -10,6 +10,7 @@ import pandas as pd
 from wordcloud import WordCloud
 from datetime import datetime
 from moviepy import AudioFileClip, concatenate_audioclips
+import matplotlib.font_manager as fm
 
 # 블루프린트 설정
 services_bp = Blueprint('services', __name__)
@@ -20,8 +21,16 @@ GEMINI_API_KEY = os.environ.get("MY_GEMINI_KEY") or "AIzaSyD0vu4fiYirJ3FVkm-rOkf
 client_gemini = genai.Client(api_key=GEMINI_API_KEY)
 TEMP_AUDIO_DIR = 'temp_audio'
 
-# 폰트 설정 (matplotlib 한글 깨짐 방지)
-plt.rcParams['font.family'] = 'Malgun Gothic'
+# 1. 폰트 파일 경로 지정 (프로젝트 폴더 내 위치에 따라 수정하세요)
+# 예: 프로젝트 루트에 malgun.ttf가 있는 경우
+font_path = os.path.join(os.getcwd(), 'malgun.ttf')
+
+# 2. 폰트 이름 가져오기
+font_name = fm.FontProperties(fname=font_path).get_name()
+
+# 3. Matplotlib에 설정
+plt.rcParams['font.family'] = font_name
+plt.rcParams['axes.unicode_minus'] = False # 마이너스 기호 깨짐 방지
 
 # ==========================================
 # 1. 유튜브 댓글 여론 분석 기능 (기존 app.py에서 이동)
@@ -42,7 +51,7 @@ def get_wordcloud_image(all_top_words):
 
     # 워드클라우드 설정 개선 (색상, 크기, 단어수)
     wc = WordCloud(
-        font_path='malgun.ttf',
+        wc = WordCloud(font_path=font_path),
         background_color='white',
         width=1000, height=500,
         max_words=100,  # 구름에 표시할 최대 단어 수
