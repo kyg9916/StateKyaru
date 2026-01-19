@@ -1,9 +1,25 @@
-discord.py
-google-genai
+# --- 웹 서버 및 DB 관련 ---
 flask
 Flask-SQLAlchemy
 pymysql
 psycopg2-binary
-requests
 gunicorn
+requests
+
+# --- AI 및 외부 API 관련 ---
+google-genai
+google-api-python-client
+
+# --- 데이터 분석 및 시각화 관련 ---
+numpy
+pandas
+matplotlib
+wordcloud
+soynlp
+
+# --- 미디어(유튜브/음원) 처리 관련 ---
 yt_dlp
+moviepy
+
+# --- 기타 ---
+discord.py

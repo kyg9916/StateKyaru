@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Plum - Multi Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* 1. 폰트 설정: 가장 굵은 900까지 확실하게 불러옵니다 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            display: flex;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* 2. 사이드바 스타일: 원본의 반투명 유리효과 그대로 유지 */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.5);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.5rem;
+            position: fixed;
+            height: 100vh;
+            z-index: 50;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center; /* items-center 오타 수정 */
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.5rem;
+            border-radius: 1.25rem;
+            color: #64748b;
+            font-weight: 700; /* 폰트를 조금 더 굵게 */
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .nav-item i { margin-right: 12px; font-size: 1.2rem; }
+
+        .nav-item:hover {
+            background: rgba(239, 68, 68, 0.05);
+            color: #ef4444;
+            transform: translateX(5px);
+        }
+
+        /* 활성화된 메뉴 (Active) 그림자 효과 강화 */
+        .nav-item.active {
+            background: #ef4444 !important;
+            color: white !important;
+            box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.3);
+        }
+
+        /* 3. 메인 컨텐츠 영역: 사이드바 너비만큼 왼쪽 마진 필수 */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem;
+            min-height: 100vh;
+        }
+
+        /* 4. 공통 유리 효과 (Glassmorphism) */
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08); /* 깊은 그림자 */
+        }
+
+        /* 버튼 및 입력창 공통 애니메이션 */
+        .input-animate { animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="mb-12 px-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-red-200">
+                    <i class="fa-solid fa-bolt text-white"></i>
+                </div>
+                <span class="text-xl font-black text-gray-800 tracking-tighter">Green Plum</span>
+            </div>
+        </div>
+
+        <div class="flex-1 space-y-2">
+            <div onclick="location.href='/'" class="nav-item {{ 'active' if request.path == '/' else '' }}">
+                <i class="fa-solid fa-house"></i> 홈으로
+            </div>
+
+            <div onclick="location.href='/youtube_comment'" class="nav-item {{ 'active' if request.path == '/youtube_comment' else '' }}">
+                <i class="fa-solid fa-comments"></i> 유튜브 댓글 여론
+            </div>
+
+            <div onclick="location.href='/youtube'" class="nav-item {{ 'active' if request.path == '/youtube' else '' }}">
+                <i class="fa-solid fa-layer-group"></i> 유튜브 음원 멀티 다운로더
+            </div>
+
+            <div onclick="location.href='/youtube_music_shuffle'" class="nav-item {{ 'active' if request.path == '/youtube_music_shuffle' else '' }}">
+                <i class="fa-solid fa-cloud-arrow-down"></i> 유튜브 재생목록 다운로더
+            </div>
+        </div>
+
+        <div class="pt-6 border-t border-gray-100 px-4">
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Developer</p>
+            <p class="text-sm font-bold text-gray-700 mt-1">초록자두 (Green Plum)</p>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>

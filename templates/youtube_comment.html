@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* 1. 색상 변수 설정 (기존 기능 유지용) */
+    :root {
+        --primary-red: #ef4444; 
+        --dark-red: #b91c1c;
+        --pos-green: #10b981;
+        --accent-gold: #fbbf24;
+    }
+
+    /* 2. 전체 레이아웃: base.html의 메인 영역에 맞춰 중앙 정렬 */
+    .analysis-wrapper {
+        width: 100%;
+        max-width: 1100px; 
+        margin: 0 auto;
+        padding-bottom: 50px;
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 3. 카드 디자인: 사이드바 테마와 통일 */
+    .card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        padding: 30px;
+        border-radius: 2rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;
+    }
+
+    /* 4. 입력창 및 버튼 디자인 */
+    .search-area {
+        text-align: center;
+        background: white;
+        padding: 40px;
+        border-radius: 2.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+    }
+
+    .input-url {
+        width: 100%;
+        max-width: 500px;
+        padding: 16px 24px;
+        border: 2px solid #f1f5f9;
+        border-radius: 1rem;
+        background: #f8fafc;
+        outline: none;
+        transition: 0.3s;
+    }
+
+    .input-url:focus {
+        border-color: var(--primary-red);
+        background: white;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    }
+
+    .btn-analyze {
+        padding: 16px 32px;
+        background: linear-gradient(135deg, var(--primary-red), var(--dark-red));
+        color: white;
+        border-radius: 1rem;
+        font-weight: 800;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .btn-analyze:hover { transform: translateY(-2px); box-shadow: 0 10px 15px rgba(239, 68, 68, 0.3); }
+
+    /* 5. 그리드 및 통계 카드 */
+    .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+    .mini-card { background: #f8fafc; padding: 20px; border-radius: 1.25rem; text-align: center; border: 1px solid #e2e8f0; }
+    .mini-card h4 { font-size: 0.85rem; color: #64748b; margin-bottom: 5px; font-weight: 700; }
+    .mini-card p { font-size: 1.25rem; font-weight: 900; color: #1e293b; }
+    .mini-card .desc { font-size: 0.75rem; color: #888; margin-top: 8px; line-height: 1.4; }
+
+    /* 6. 감정바 및 차트 */
+    .sentiment-bar { height: 48px; border-radius: 999px; display: flex; overflow: hidden; margin: 20px 0; }
+    .bar-pos { background: #10b981; color: white; line-height: 48px; font-weight: bold; text-align: center; }
+    .bar-neu { background: #94a3b8; color: white; line-height: 48px; font-weight: bold; text-align: center; }
+    .bar-neg { background: #ef4444; color: white; line-height: 48px; font-weight: bold; text-align: center; }
+
+    .analysis-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .img-fluid { width: 100%; border-radius: 15px; }
+
+    /* 7. 태그 및 테이블 */
+    .idea-tag { background: #fffde7; border: 1px solid #ffd54f; padding: 8px 16px; border-radius: 30px; font-weight: bold; color: #f57f17; display: inline-block; margin: 5px; }
+    .video-info-box { display: flex; gap: 25px; align-items: flex-start; }
+    .video-thumb { width: 300px; border-radius: 15px; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+    td { padding: 16px; background: white; border: 1px solid #f1f5f9; border-radius: 12px; }
+    .toxic-text { color: var(--dark-red); font-weight: 500; }
+
+    @media (max-width: 1024px) {
+        .dashboard-grid, .analysis-tabs, .video-info-box { grid-template-columns: 1fr; flex-direction: column; }
+        .video-thumb { width: 100%; }
+    }
+</style>
+
+<div class="analysis-wrapper">
+    <header class="text-center mb-10">
+        <h1 class="text-4xl font-black text-gray-800 mb-4">🎬 유튜브 여론 분석기 Pro</h1>
+        <p class="text-gray-500 font-medium">데이터로 읽는 시청자의 마음 (최대 2,000개 분석)</p>
+    </header>
+
+    <section class="search-area">
+        <form method="POST">
+            <input type="text" name="url" class="input-url" placeholder="분석할 유튜브 URL을 입력하세요" required>
+            <button type="submit" class="btn-analyze">데이터 통계 보기</button>
+        </form>
+        {% if error %}
+        <div class="text-red-500 mt-4 font-bold">⚠️ {{ error }}</div>
+        {% endif %}
+    </section>
+
+    {% if video %}
+    <div class="dashboard-grid">
+        <div class="card">
+            <div class="flex justify-between items-start mb-6">
+                <h2 class="text-xl font-bold text-yellow-700">🏆 AI 채널 전략 리포트</h2>
+                <span class="bg-yellow-400 px-3 py-1 rounded-full text-xs font-bold text-white">BEST 전략</span>
+            </div>
+            <div class="bg-yellow-50 p-5 rounded-2xl mb-6">
+                <h3 class="font-bold text-yellow-800 mb-3">🔥 차기 콘텐츠 아이디어 TOP 3</h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for idea in content_ideas %}
+                    <div class="idea-tag"># {{ idea }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="bg-white border border-gray-100 p-4 rounded-xl mb-4 italic text-gray-700">
+                <strong>🤖 AI 요약:</strong> {{ summary }}
+            </div>
+            <div class="mt-6">
+                <h4 class="font-bold mb-3">📌 고정 댓글 추천</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {% for pin in pin_candidates %}
+                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-xs text-blue-800">
+                        <strong>{{ pin.author }}</strong><br>"{{ pin.text[:40] }}..."
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card text-center border-t-8 {% if clean_score >= 90 %}border-green-500{% else %}border-orange-500{% endif %}">
+            <h2 class="text-lg font-bold mb-4">🛡️ 클린 지수</h2>
+            <div class="text-6xl font-black {% if clean_score >= 90 %}text-green-500{% else %}text-orange-500{% endif %} mb-2">
+                {{ clean_score }}<span class="text-2xl">점</span>
+            </div>
+            <p class="font-bold text-gray-700 mb-4">{{ clean_status }}</p>
+            <div class="bg-gray-50 p-4 rounded-2xl text-sm">오염도: {{ (100 - clean_score)|round(1) }}%</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="video-info-box">
+            <a href="https://www.youtube.com/watch?v={{ video_id }}" target="_blank">
+                <img src="{{ video.thumbnail }}" class="video-thumb shadow-xl">
+            </a>
+            <div class="video-meta flex-1">
+                <h2 class="text-2xl font-black mb-2">{{ video.title }}</h2>
+                <p class="text-gray-500 text-sm mb-4">👤 {{ video.channel }} | 👁️ {{ "{:,}".format(video.view_count|int) }}회</p>
+                <div class="bg-gray-50 p-4 rounded-xl text-sm text-gray-600 leading-relaxed border border-gray-100">
+                    {{ video.description[:250] }}...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="text-xl font-bold mb-6">📊 핵심 통계 리포트</h3>
+        <div class="stat-grid">
+            <div class="mini-card"><h4>평균 좋아요</h4><p>{{ stats.mean }}개</p></div>
+            <div class="mini-card"><h4>중앙값</h4><p>{{ stats.median }}개</p></div>
+            <div class="mini-card"><h4>💎 찐팬 지수</h4><p>{{ stats.super_fan_score }}%</p></div>
+            <div class="mini-card" style="background-color: #f0f9ff;"><h4>📈 댓글 확률</h4><p>{{ advice.comment_rate }}%</p></div>
+            <div class="mini-card"><h4>데이터 편차</h4><p>{{ stats.std }}</p></div>
+            <div class="mini-card"><h4>최대 좋아요</h4><p>{{ stats.max }}개</p></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="text-xl font-bold mb-4">🎭 시청자 감정 온도</h3>
+        <div class="sentiment-bar">
+            <div class="bar-pos" style="width: {{ pos_percent }}%;">긍정 {{ pos_percent }}%</div>
+            <div class="bar-neu" style="width: {{ neu_percent }}%;">중립 {{ neu_percent }}%</div>
+            <div class="bar-neg" style="width: {{ neg_percent }}%;">부정 {{ neg_percent }}%</div>
+        </div>
+    </div>
+
+    <div class="analysis-tabs">
+        <div class="card">
+            <h3 class="font-bold mb-4">📈 키워드 빈도 TOP 10</h3>
+            <img src="{{ chart }}" class="img-fluid">
+        </div>
+        <div class="card">
+            <h3 class="font-bold mb-4">☁️ 워드 클라우드</h3>
+            <img src="{{ wordcloud }}" class="img-fluid">
+        </div>
+    </div>
+
+    <div class="card border-l-8 border-red-500">
+        <h3 class="text-red-600 font-bold mb-4">⚠️ 관리 주의 필요 댓글</h3>
+        {% if toxic_comments %}
+        <table>
+            {% for toxic in toxic_comments %}
+            <tr><td width="150"><strong>{{ toxic.author }}</strong></td><td class="toxic-text">{{ toxic.text }}</td><td width="100">👍 {{ toxic.like_count }}</td></tr>
+            {% endfor %}
+        </table>
+        {% else %}<p class="text-center text-gray-400 py-10">클린한 댓글창입니다! ✨</p>{% endif %}
+    </div>
+
+    <div class="card border-l-8 border-green-500">
+        <h3 class="text-green-600 font-bold mb-4">🌟 긍정적인 반응 (Best 10)</h3>
+        <table>
+            {% for comm in pos_comments %}
+            <tr><td width="150"><strong>{{ comm.author }}</strong></td><td>{{ comm.text }}</td><td width="100">👍 {{ comm.like_count }}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
