@@ -136,8 +136,7 @@
                 <p class="text-gray-500 text-sm mt-2 font-medium">유튜브 재생목록을 한 번에 저장하세요!</p>
             </div>
 
-<!--            <form id="download-form" onsubmit="startDownload(event)" class="space-y-8">-->
-            <form id="download-form" onsubmit="startDownload(event)" class="space-y-8">
+            <form id="download-form" onsubmit="goToNotice(event)" class="space-y-8">
 
                 <div class="space-y-3">
                     <div class="flex items-center justify-between px-1">
@@ -268,17 +267,8 @@
         }
 
         async function startDownload(event) {
-    event.preventDefault();
-
-    const form = document.getElementById('download-form');
-    const formData = new FormData(form);
-    const statusDiv = document.getElementById('status');
-    const errorBox = document.getElementById('error-box');
-    const btn = document.getElementById('submit-btn');
-
-    form.classList.add('hidden');
-    statusDiv.classList.remove('hidden');
-    btn.disabled = true;
+    // 이미 goToNotice에서 preventDefault를 했으므로 여기선 생략 가능
+    const formData = new FormData(document.getElementById('download-form'));
 
     try {
         const response = await fetch('/download', {
@@ -286,23 +276,17 @@
             body: formData
         });
 
-        // 1. 서버가 성공(200) 응답을 보냈을 때 (파일 다운로드)
         if (response.ok) {
+            // [성공] 서버가 파일을 던져줌 -> .blob()으로 받아야 함!
+            const blob = await response.blob();
             const contentDisposition = response.headers.get('Content-Disposition');
-            let fileName = 'download.zip'; // 기본값
+            let fileName = 'download.zip';
 
             if (contentDisposition) {
                 const fileNameMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/);
-                if (fileNameMatch) {
-                    fileName = decodeURIComponent(fileNameMatch[1]);
-                } else {
-                    const simpleMatch = contentDisposition.match(/filename="(.+)"/);
-                    if (simpleMatch) fileName = simpleMatch[1];
-                }
+                if (fileNameMatch) fileName = decodeURIComponent(fileNameMatch[1]);
             }
 
-            // [중요] .json() 대신 .blob()을 사용하여 파일 데이터를 받습니다!
-            const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -311,50 +295,50 @@
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
-
             resetUI();
-        }
-        // 2. 서버가 실패(400, 500 등) 응답을 보냈을 때 (JSON 에러 메시지)
-        else {
-            // 실패했을 때만 JSON으로 읽어서 에러 메시지를 출력합니다.
-            const errorData = await response.json();
-            throw new Error(errorData.message || '다운로드 실패');
+        } else {
+            // [실패] 서버가 JSON으로 에러 메시지를 보냄
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const errorData = await response.json();
+                throw new Error(errorData.message);
+            } else {
+                throw new Error("서버 연결에 실패했습니다.");
+            }
         }
     } catch (error) {
         console.error(error);
-        statusDiv.classList.add('hidden');
-        errorBox.classList.remove('hidden');
+        document.getElementById('status').classList.add('hidden');
+        document.getElementById('error-box').classList.remove('hidden');
         document.getElementById('error-summary').innerText = error.message;
     }
 }
 
         function goToNotice(event) {
-    event.preventDefault();
+    event.preventDefault(); // 폼이 멋대로 새로고침되는 걸 막아요
+
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
     const form = document.getElementById('download-form');
     const statusDiv = document.getElementById('status');
     const btn = document.getElementById('submit-btn');
 
-    // 로딩 화면 표시
+    // 1. 공통적으로 로딩 화면 표시
     form.classList.add('hidden');
     statusDiv.classList.remove('hidden');
     btn.disabled = true;
 
-    // --- 환경 판단 로직 추가 ---
-    // 현재 접속한 주소(hostname)가 localhost인지 확인합니다.
-    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-
-    setTimeout(() => {
-        if (isLocal) {
-            // 로컬(내 컴퓨터)일 때는 실제 다운로드 로직 실행 (기존 startDownload 함수 내용)
-            console.log("로컬 환경: 다운로드를 시작합니다.");
-            startDownload(event);
-        } else {
-            // 배포 환경일 때는 안내 페이지로 이동
-            console.log("배포 환경: 안내 페이지로 이동합니다.");
+    if (isLocal) {
+        // A. 로컬 환경: 실제 다운로드 함수 실행
+        console.log("로컬 환경 확인: 다운로드를 진행합니다.");
+        startDownload(event);
+    } else {
+        // B. 배포 환경: 1.2초 뒤에 안내 페이지로 이동
+        console.log("배포 환경 확인: 안내 페이지로 이동합니다.");
+        setTimeout(() => {
             location.href = '/youtube_music_suffle_test';
-        }
-    }, 1200);
+        }, 1200);
+    }
 }
 
     </script>
