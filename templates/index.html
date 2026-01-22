@@ -81,7 +81,6 @@
             <a class="nav-link" style="color: #964b00 !important; cursor: pointer;" onclick="location.href='/rollet'">🎰 벅샷룰렛</a>
             <a class="nav-link" style="color: #041133 !important; cursor: pointer;" onclick="location.href='/lucky'">❤️ 타로보기</a>
             <a class="nav-link" style="color: #000000 !important; cursor: pointer;" onclick="location.href='/board'">🎈 게시판</a>
-            <a class="nav-link" style="color: #65e30b !important; cursor: pointer;" onclick="location.href='/calendar'">✅ 캘린더</a>
         </div>
         <div class="developer me-3" style="font-size: 0.8rem; color: #888;">Developer by. 김윤겸</div>
         <button class="theme-btn" onclick="toggleTheme()">🌓</button>
@@ -425,10 +424,30 @@ function triggerAutoAFK() {
 function sendCustomStatus() { send('etc', document.getElementById('custom-status').value); }
 function sendDirectMsg() {
     const msg = document.getElementById('direct-msg').value;
-    const nick = document.getElementById('nickname').value;
-    fetch(DISCORD_WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ embeds: [{ author:{name:nick}, description:`💬 ${msg}` }] }) });
-    addHistoryItem(nick, `💬 ${msg}`, getNowFormatted());
+    const nick = document.getElementById('nickname').value || "초록자두";
+
+    if (!msg) return;
+
+    // 디스코드에서 좋아하는 JSON 규격으로 포장!
+    const payload = {
+        "embeds": [{
+            "author": { "name": nick },
+            "description": `💬 ${msg}`,
+            "color": 5814783
+        }]
+    };
+
+    // 서버(/send_discord)로 보냅니다. (정의되지 않은 DISCORD_WEBHOOK 변수 대신 사용)
+    fetch("/send_discord", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload) // JSON 문자열로 변신!
+    })
+    .then(() => {
+        addHistoryItem(nick, `💬 ${msg}`, getNowFormatted());
+        document.getElementById('direct-msg').value = ""; // 입력창 비우기
+    })
+    .catch(err => console.error("전송 에러:", err));
 }
 function updateStatistics(name) {
     // 1. 기존 데이터를 가져오고, 없으면 빈 객체{}를 기본값으로 설정
@@ -455,12 +474,11 @@ function restoreStatus() {
         startTimer((s.expireTime - Date.now()) / 1000);
     }
 }
-function extendTime(min) {
-    const data = localStorage.getItem('currentStatus');
-    if (!data) {
-        alert("현재 실행 중인 타이머가 없습니다. 상태를 먼저 선택해주세요!");
-        return;
-    }
+fetch("/send_discord", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(embedData)
+});
 
     const s = JSON.parse(data);
     const now = Date.now();
