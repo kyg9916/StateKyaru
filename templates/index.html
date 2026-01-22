@@ -213,35 +213,29 @@
 </div>
 
 <script>
-// --- 전역 변수 선언 (가장 먼저!) ---
+// --- 1. 전역 변수 선언 ---
 let countdownInterval;
 let myChart = null;
 let afkTimer;
 let isAFKMode = false;
 let isProcessingBack = false;
-// 잠수모드 실제 const AFK_TIMEOUT = 60 * 60 * 1000;
-const AFK_TIMEOUT = 60 * 60 * 1000;
+const AFK_TIMEOUT = 60 * 60 * 1000; // 60분
+
+// --- 2. 페이지 로드 시 초기화 ---
 window.onload = function() {
-    // 저장된 닉네임 불러오기
     const savedName = localStorage.getItem('userNickname');
     if (savedName) {
         document.getElementById('nickname').value = savedName;
     }
-
-    // 알림 권한 (이건 그대로 두세요)
     if (Notification.permission !== 'granted') Notification.requestPermission();
-
-    // 상태 복원
     restoreStatus();
 };
 
-// 닉네임 입력할 때마다 바로바로 저장하기
+// --- 3. 기본 유틸리티 함수 ---
 function saveNickname() {
-    const nick = document.getElementById('nickname').value;
-    localStorage.setItem('userNickname', nick);
+    localStorage.setItem('userNickname', document.getElementById('nickname').value);
 }
 
-function saveNickname() { localStorage.setItem('userNickname', document.getElementById('nickname').value); }
 function toggleTheme() { document.body.classList.toggle('dark-mode'); }
 function resetTimeValue() { document.getElementById('return-time').value = ""; }
 function setTimeValue(min) { document.getElementById('return-time').value = min; }
@@ -251,7 +245,7 @@ function getNowFormatted() {
     return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 }
 
-// 📡 기본 전송 함수
+// --- 4. 핵심 전송 함수 (서버로 전달) ---
 function send(action, statusName) {
     const nickname = document.getElementById('nickname').value.trim();
     if (!nickname) { alert("닉네임을 입력해주세요!"); return; }
@@ -299,6 +293,7 @@ function send(action, statusName) {
         estimatedReturnMsg = `${returnTime}분 후 (${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} 예정)`;
     }
 
+    // [강사님 강조!] JSON 구조: 객체 안에 배열(embeds), 배열 안에 객체
     const embedData = {
         embeds: [{
             title: `${info.icon} ${nickname}님의 상태`,
@@ -330,6 +325,37 @@ function send(action, statusName) {
     }
 }
 
+// --- 5. 커스텀 기능 함수들 ---
+function sendCustomStatus() {
+    const val = document.getElementById('custom-status').value;
+    if(val) send('etc', val);
+}
+
+function sendDirectMsg() {
+    const msg = document.getElementById('direct-msg').value;
+    const nick = document.getElementById('nickname').value || "초록자두";
+    if (!msg) return;
+
+    const payload = {
+        embeds: [{
+            author: { name: nick },
+            description: `💬 ${msg}`,
+            color: 5814783,
+            footer: { text: `시각: ${getNowFormatted()}` }
+        }]
+    };
+
+    fetch("/send_discord", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    }).then(() => {
+        addHistoryItem(nick, `💬 ${msg}`, getNowFormatted());
+        document.getElementById('direct-msg').value = "";
+    });
+}
+
+// --- 6. UI 및 타이머 관리 ---
 function updateUI(nickname, icon, statusName, timestamp, msg) {
     document.getElementById('display-icon').innerText = icon;
     document.getElementById('display-text').innerHTML = `<span style="color:#5865F2;">${nickname}</span><br>[${statusName}] 중`;
@@ -342,7 +368,6 @@ function addHistoryItem(nickname, msg, timestamp) {
     historyBox.innerHTML = newRecord + historyBox.innerHTML;
 }
 
-// ⏰ 정밀 타이머
 function startTimer(secondsTotal) {
     const endTime = Date.now() + (secondsTotal * 1000);
     if (countdownInterval) clearInterval(countdownInterval);
@@ -361,17 +386,16 @@ function startTimer(secondsTotal) {
     }, 1000);
 }
 
-// 💤 잠수 모드 로직
+// --- 7. 잠수 모드 (AFK) ---
 function toggleAFKMode() {
     isAFKMode = !isAFKMode;
     const btn = document.getElementById('afk-btn');
     if (isAFKMode) {
         btn.innerText = "잠수모드 ON 🌙";
         btn.style.backgroundColor = "#2ecc71";
-        resetAFKTimer();
         window.addEventListener('mousemove', resetAFKTimer);
         window.addEventListener('keypress', resetAFKTimer);
-        alert("60분간 무활동 시 자동으로 '잠수' 상태가 됩니다.");
+        resetAFKTimer();
     } else {
         btn.innerText = "잠수모드 OFF 😴";
         btn.style.backgroundColor = "#9b59b6";
@@ -382,87 +406,53 @@ function toggleAFKMode() {
 }
 
 function resetAFKTimer() {
-    if (!isAFKMode) return; // 잠수모드가 꺼져있으면 작동 안 함
-
-    // 1. 현재 어떤 상태가 설정되어 있는지 확인
+    if (!isAFKMode) return;
     const currentData = localStorage.getItem('currentStatus');
-
     if (currentData) {
-        // [중요] 활동이 감지되면 즉시 복귀 함수(send 'back') 실행
-        // 어떤 상태(밥, 화장실, 잠수 등)든 상관없이 복귀시킵니다.
-        console.log("활동 감지: 모든 상태를 해제하고 복귀합니다.");
-
-        // 중복 전송을 막기 위해 잠시 리스너를 제거했다가 send 완료 후 다시 생각할 수도 있지만,
-        // 기본적으로 send('back', ...) 내부에 중복 방지 로직이 있으므로 바로 실행합니다.
         send('back', '복귀');
-
-        if (Notification.permission === 'granted') {
-            new Notification("상태 알림", { body: "활동이 감지되어 자동으로 복귀 처리되었습니다!" });
-        }
+        if (Notification.permission === 'granted') new Notification("상태 알림", { body: "활동 감지! 자동 복귀되었습니다." });
     }
-
-    // 2. 잠수 타이머 리셋 (다시 처음부터 60분 카운트)
     clearTimeout(afkTimer);
-    afkTimer = setTimeout(triggerAutoAFK, AFK_TIMEOUT);
+    afkTimer = setTimeout(() => {
+        if (!localStorage.getItem('currentStatus')) send('nap', '자동 잠수');
+    }, AFK_TIMEOUT);
 }
 
-function triggerAutoAFK() {
-    const nickname = document.getElementById('nickname').value.trim();
-    if (!nickname) return;
-
-    // 이미 다른 상태(밥, 화장실 등)가 설정되어 있으면 잠수모드로 덮어쓰지 않음
-    if (localStorage.getItem('currentStatus')) return;
-
-    // 잠수 상태로 변경
-    send('nap', '자동 잠수');
-
-    // 화면에 안내 표시 (선택 사항)
-    console.log("60분간 활동이 없어 잠수 상태로 전환되었습니다.");
+// --- 8. 통계 및 시간 연장 ---
+function updateStatistics(name) {
+    let stats = JSON.parse(localStorage.getItem('statusStats') || '{}');
+    stats[name] = (stats[name] || 0) + 1;
+    localStorage.setItem('statusStats', JSON.stringify(stats));
 }
 
-// 나머지 유틸리티 함수
-function sendCustomStatus() { send('etc', document.getElementById('custom-status').value); }
-function sendDirectMsg() {
-    const msg = document.getElementById('direct-msg').value;
-    const nick = document.getElementById('nickname').value || "초록자두";
+function extendTime(min) {
+    const data = localStorage.getItem('currentStatus');
+    if (!data) return;
+    const s = JSON.parse(data);
+    const now = Date.now();
+    let baseTime = (s.expireTime && s.expireTime > now) ? s.expireTime : now;
+    const newExpireTime = baseTime + (min * 60000);
+    s.expireTime = newExpireTime;
+    localStorage.setItem('currentStatus', JSON.stringify(s));
+    startTimer(Math.max(0, Math.round((newExpireTime - now) / 1000)));
 
-    if (!msg) return;
-
-    // 디스코드에서 좋아하는 JSON 규격으로 포장!
+    const timeStr = new Date(newExpireTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     const payload = {
-        "embeds": [{
-            "author": { "name": nick },
-            "description": `💬 ${msg}`,
-            "color": 5814783
+        embeds: [{
+            title: `⏳ 시간 연장 알림`,
+            color: 3447003,
+            description: `${s.nickname}님의 복귀 시간이 **${min}분** 연장되었습니다.\n(예상 복귀: ${timeStr})`
         }]
     };
-
-    // 서버(/send_discord)로 보냅니다. (정의되지 않은 DISCORD_WEBHOOK 변수 대신 사용)
-    fetch("/send_discord", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload) // JSON 문자열로 변신!
-    })
-    .then(() => {
-        addHistoryItem(nick, `💬 ${msg}`, getNowFormatted());
-        document.getElementById('direct-msg').value = ""; // 입력창 비우기
-    })
-    .catch(err => console.error("전송 에러:", err));
+    fetch("/send_discord", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
 }
-function updateStatistics(name) {
-    // 1. 기존 데이터를 가져오고, 없으면 빈 객체{}를 기본값으로 설정
-    let stats = JSON.parse(localStorage.getItem('statusStats') || '{}');
 
-    // 2. 만약 stats가 어떤 이유로 null이면 다시 빈 객체로 초기화
-    if (!stats) stats = {};
-
-    // 3. 횟수 추가
-    stats[name] = (stats[name] || 0) + 1;
-
-    // 4. 저장
-    localStorage.setItem('statusStats', JSON.stringify(stats));
-    console.log("통계가 업데이트됨:", stats);
+function extendDirect() {
+    const val = document.getElementById('extend-direct-time').value;
+    if (val > 0) extendTime(parseInt(val));
+    document.getElementById('extend-direct-time').value = "";
 }
+
 function restoreStatus() {
     const data = localStorage.getItem('currentStatus');
     if (!data) return;
@@ -474,138 +464,45 @@ function restoreStatus() {
         startTimer((s.expireTime - Date.now()) / 1000);
     }
 }
-fetch("/send_discord", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(embedData)
-});
 
-    const s = JSON.parse(data);
-    const now = Date.now();
-
-    // 만약 이미 시간이 만료되었다면 현재 시간 기준으로, 아니면 기존 만료 시간 기준으로 연장
-    let baseTime = (s.expireTime && s.expireTime > now) ? s.expireTime : now;
-    const newExpireTime = baseTime + (min * 60000);
-
-    // 데이터 업데이트
-    s.expireTime = newExpireTime;
-    localStorage.setItem('currentStatus', JSON.stringify(s));
-
-    // 타이머 재시작
-    const remainingSeconds = Math.max(0, Math.round((newExpireTime - now) / 1000));
-    document.getElementById('countdown-display').style.display = "block";
-    startTimer(remainingSeconds);
-
-    // 디스코드에 연장 알림 전송 (선택 사항)
-    const timestamp = getNowFormatted();
-    const targetDate = new Date(newExpireTime);
-    const timeStr = `${String(targetDate.getHours()).padStart(2, '0')}:${String(targetDate.getMinutes()).padStart(2, '0')}`;
-
-    const embedData = {
-        embeds: [{
-            title: `⏳ 시간 연장 알림`,
-            color: 3447003,
-            description: `${s.nickname}님의 복귀 시간이 **${min}분** 연장되었습니다.\n(예상 복귀: ${timeStr})`,
-            footer: { text: `연장 시각: ${timestamp}` }
-        }]
-    };
-    fetch(DISCORD_WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(embedData) });
-
-    addHistoryItem(s.nickname, `⏳ 시간 ${min}분 연장 (복귀 예정: ${timeStr})`, timestamp);
-}
-function extendDirect() {
-    const val = document.getElementById('extend-direct-time').value;
-    if (!val || val <= 0) {
-        alert("연장할 분을 입력해주세요!");
-        return;
-    }
-    extendTime(parseInt(val));
-    document.getElementById('extend-direct-time').value = "";
-}
+// --- 9. 모달 및 차트 ---
 function openModal() { document.getElementById('guideModal').style.display = 'block'; }
 function closeModal() { document.getElementById('guideModal').style.display = 'none'; }
 function openStatsModal() { document.getElementById('statsModal').style.display = 'block'; setTimeout(drawChart, 100); }
 function closeStatsModal() { document.getElementById('statsModal').style.display = 'none'; }
+
 function drawChart() {
     const stats = JSON.parse(localStorage.getItem('statusStats') || '{}');
     const ctx = document.getElementById('statsChart').getContext('2d');
-
     if (myChart) myChart.destroy();
-
     myChart = new Chart(ctx, {
-        type: 'line', // 1. 꺾은선 그래프로 변경
+        type: 'line',
         data: {
             labels: Object.keys(stats),
-            datasets: [{
-                label: '상태 사용 횟수',
-                data: Object.values(stats),
-                borderColor: '#5865F2', // 선 색상
-                backgroundColor: 'rgba(88, 101, 242, 0.2)', // 선 아래 채우기 색상
-                borderWidth: 3,
-                tension: 0.3, // 2. 선을 약간 부드럽게 (0으로 하면 완전히 뾰족해짐)
-                fill: true,   // 선 아래 영역 채우기
-                pointRadius: 5, // 점 크기
-                pointBackgroundColor: '#5865F2'
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        // 3. 1단위로 딱딱 끊어지게 설정 (소수점 제거)
-                        stepSize: 1,
-                        callback: function(value) {
-                            if (Math.floor(value) === value) {
-                                return value;
-                            }
-                        }
-                    }
-                }
-            }
+            datasets: [{ label: '사용 횟수', data: Object.values(stats), borderColor: '#5865F2', tension: 0.3, fill: true }]
         }
     });
 }
+
+// --- 10. AI 캬루 질문 ---
 async function askKyaru() {
     const input = document.getElementById('kyaru-input');
     const msg = input.value.trim();
-    const nick = document.getElementById('nickname').value || "초록자두"; // 닉네임 없으면 기본값
-
-    const loadingDiv = document.getElementById('kyaru-loading');
-    const responseDiv = document.getElementById('kyaru-response');
-    const responseText = document.getElementById('kyaru-text');
-
-    if (!msg) {
-        alert("할 말도 없으면서 부르지 말란 말이야! 흥!");
-        return;
-    }
-
-    // 로딩 표시 시작
-    loadingDiv.style.display = 'block';
-    responseDiv.style.display = 'none';
-
+    if (!msg) return;
+    document.getElementById('kyaru-loading').style.display = 'block';
+    document.getElementById('kyaru-response').style.display = 'none';
     try {
         const response = await fetch("/ask_kyaru", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: msg, nickname: nick })
+            body: JSON.stringify({ message: msg, nickname: document.getElementById('nickname').value || "초록자두" })
         });
-
         const data = await response.json();
-
-        // 캬루의 답변 출력
-        responseText.innerText = data.answer;
-        loadingDiv.style.display = 'none';
-        responseDiv.style.display = 'block';
-
-        input.value = ""; // 입력창 비우기
-    } catch (error) {
-        console.error("Error:", error);
-        responseText.innerText = "서버가 이상해! 나중에 다시 오라고!";
-        loadingDiv.style.display = 'none';
-        responseDiv.style.display = 'block';
-    }
+        document.getElementById('kyaru-text').innerText = data.answer;
+        document.getElementById('kyaru-loading').style.display = 'none';
+        document.getElementById('kyaru-response').style.display = 'block';
+        input.value = "";
+    } catch (e) { console.error(e); }
 }
 </script>
 </body>
