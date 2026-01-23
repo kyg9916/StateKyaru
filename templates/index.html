@@ -246,7 +246,8 @@ function getNowFormatted() {
 }
 
 // --- 4. 핵심 전송 함수 (서버로 전달) ---
-function send(action, statusName) {
+// [수정] async를 붙여서 서버의 응답을 기다릴 수 있게 만듭니다.
+async function send(action, statusName) {
     const nickname = document.getElementById('nickname').value.trim();
     if (!nickname) { alert("닉네임을 입력해주세요!"); return; }
 
@@ -293,7 +294,6 @@ function send(action, statusName) {
         estimatedReturnMsg = `${returnTime}분 후 (${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} 예정)`;
     }
 
-    // [강사님 강조!] JSON 구조: 객체 안에 배열(embeds), 배열 안에 객체
     const embedData = {
         embeds: [{
             title: `${info.icon} ${nickname}님의 상태`,
@@ -304,24 +304,34 @@ function send(action, statusName) {
         }]
     };
 
-    fetch("/send_discord", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(embedData)
-    });
+    // [수정] try-catch 문으로 감싸서 에러를 안전하게 잡습니다.
+    try {
+        const response = await fetch("/send_discord", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(embedData)
+        });
 
-    updateUI(nickname, info.icon, statusName, timestamp, statusMsg);
+        if (response.ok) {
+            // 서버 전송이 성공했을 때만 아래 UI 업데이트를 실행합니다.
+            updateUI(nickname, info.icon, statusName, timestamp, statusMsg);
 
-    if (action !== 'back') {
-        updateStatistics(statusName);
-        const expireTime = returnTime ? Date.now() + (returnTime * 60000) : null;
-        localStorage.setItem('currentStatus', JSON.stringify({ nickname, icon: info.icon, statusName, expireTime }));
-        if (returnTime) {
-            document.getElementById('countdown-display').style.display = "block";
-            startTimer(returnTime * 60);
+            if (action !== 'back') {
+                updateStatistics(statusName);
+                const expireTime = returnTime ? Date.now() + (returnTime * 60000) : null;
+                localStorage.setItem('currentStatus', JSON.stringify({ nickname, icon: info.icon, statusName, expireTime }));
+                if (returnTime) {
+                    document.getElementById('countdown-display').style.display = "block";
+                    startTimer(returnTime * 60);
+                }
+            } else {
+                localStorage.removeItem('currentStatus');
+            }
+        } else {
+            console.error("서버 응답 오류:", response.status);
         }
-    } else {
-        localStorage.removeItem('currentStatus');
+    } catch (error) {
+        console.error("네트워크 에러:", error);
     }
 }
 
@@ -331,7 +341,8 @@ function sendCustomStatus() {
     if(val) send('etc', val);
 }
 
-function sendDirectMsg() {
+// [수정] 직접 메시지도 서버 응답을 확인하도록 수정했습니다.
+async function sendDirectMsg() {
     const msg = document.getElementById('direct-msg').value;
     const nick = document.getElementById('nickname').value || "초록자두";
     if (!msg) return;
@@ -345,14 +356,20 @@ function sendDirectMsg() {
         }]
     };
 
-    fetch("/send_discord", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    }).then(() => {
-        addHistoryItem(nick, `💬 ${msg}`, getNowFormatted());
-        document.getElementById('direct-msg').value = "";
-    });
+    try {
+        const response = await fetch("/send_discord", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            addHistoryItem(nick, `💬 ${msg}`, getNowFormatted());
+            document.getElementById('direct-msg').value = "";
+        }
+    } catch (e) {
+        console.error("메시지 전송 실패:", e);
+    }
 }
 
 // --- 6. UI 및 타이머 관리 ---
@@ -408,14 +425,12 @@ function toggleAFKMode() {
 function resetAFKTimer() {
     if (!isAFKMode) return;
 
-    // 현재 '복귀' 상태가 아닐 때(즉, 무언가 상태가 설정되어 있을 때)만 딱 한 번 실행!
     const currentData = localStorage.getItem('currentStatus');
     if (currentData && !isProcessingBack) {
-        isProcessingBack = true; // 중복 실행 방지 락(Lock) 걸기
+        isProcessingBack = true;
         send('back', '복귀');
         if (Notification.permission === 'granted') new Notification("상태 알림", { body: "활동 감지! 자동 복귀되었습니다." });
 
-        // 3초 뒤에 다시 락 해제 (연타 방지)
         setTimeout(() => { isProcessingBack = false; }, 3000);
     }
 
@@ -432,7 +447,8 @@ function updateStatistics(name) {
     localStorage.setItem('statusStats', JSON.stringify(stats));
 }
 
-function extendTime(min) {
+// [수정] 연장하기 기능도 서버 응답을 기다리도록 수정
+async function extendTime(min) {
     const data = localStorage.getItem('currentStatus');
     if (!data) return;
     const s = JSON.parse(data);
@@ -451,7 +467,8 @@ function extendTime(min) {
             description: `${s.nickname}님의 복귀 시간이 **${min}분** 연장되었습니다.\n(예상 복귀: ${timeStr})`
         }]
     };
-    fetch("/send_discord", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+
+    await fetch("/send_discord", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
 }
 
 function extendDirect() {
