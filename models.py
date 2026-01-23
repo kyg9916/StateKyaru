@@ -1,6 +1,5 @@
 # models.py
 from flask_sqlalchemy import SQLAlchemy
-
 db = SQLAlchemy()
 
 # --- [게시판 설계도] ---

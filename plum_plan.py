@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime
 from models import db, Event, Todo
+import calendar  # ✅ 파이썬 기본 달력 도구가 필요하면 이렇게 그냥 불러오면 됩니다!
+from calendar import monthrange # ✅ 혹시 monthrange가 필요하면 이렇게 직접 가져오세요.
+
 
 # 블루프린트 설정 (이름: calendar)
 calendar_bp = Blueprint('plum_calendar', __name__)

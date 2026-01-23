@@ -11,8 +11,6 @@ from services import services_bp
 from plum_plan import calendar_bp
 import time
 
-if 'calendar' in sys.modules:
-    del sys.modules['calendar']
 
 print("YOUTUBE API 키 로드됨:", bool(os.environ.get('MY_YOUTUBE_KEY')))
 print("GEMINI API 키 로드됨:", bool(os.environ.get('MY_GEMINI_KEY')))
@@ -68,30 +66,31 @@ def send_discord():
             webhook_url = webhook_url.strip()
 
         if not webhook_url:
-            print("❌ 에러: DISCORD_WEBHOOK_URL 환경변수가 없습니다!")
-            return {"status": "error", "message": "웹훅 주소 미설정"}, 400
+            return {"status": "error", "message": "환경변수에 웹훅 주소가 없습니다."}, 400
 
-        # 디스코드로 전송!
+        # 1. 일단 디스코드로 데이터를 보냅니다.
         response = requests.post(webhook_url, json=data, timeout=10)
 
-        # ✅ 2. 429(Rate Limit) 에러 발생 시 처리
+        # 2. 만약 너무 많이 보냈다고(429) 하면 잠시 기다렸다 다시 보냅니다.
         if response.status_code == 429:
-            retry_after = response.json().get('retry_after', 1) / 1000
-            print(f"⚠️ 너무 빨라요! {retry_after}초 후 다시 시도합니다.")
+            # 429일 때만 디스코드가 '언제 다시 보낼지' 정보를 주므로 이때만 json()을 씁니다.
+            retry_data = response.json()
+            retry_after = retry_data.get('retry_after', 1) / 1000
+            print(f"⚠️ 전송량이 많아 {retry_after}초 대기합니다.")
             time.sleep(retry_after)
             response = requests.post(webhook_url, json=data)
 
-        # ✅ 3. 성공 여부 확인 (200~299 사이면 모두 성공)
-        # response.json()을 함부로 호출하지 않게 수정했습니다!
+        # 3. [가장 중요] 성공(204 또는 200)했는지 확인합니다.
+        # 여기서 절대 response.json()을 호출하지 않는 게 핵심입니다!
         if response.ok:
-            print("✅ 디스코드 알람 전송 성공!")
+            print("✅ 디스코드 전송 성공!")
             return {"status": "success"}, 200
         else:
-            print(f"❌ 디스코드 응답 에러! 상태코드: {response.status_code}")
-            return {"status": "error", "message": "디스코드 전송 실패"}, response.status_code
+            print(f"❌ 디스코드 응답 실패: {response.status_code}")
+            return {"status": "error", "message": "디스코드 거절"}, response.status_code
 
     except Exception as e:
-        # ✅ 4. 어떤 에러인지 정확히 로그에 찍어줍니다.
+        # 에러가 나면 어떤 에러인지 로그에 찍어줍니다.
         print(f"🔥 서버 내부 에러 발생: {e}")
         return {"status": "error", "message": str(e)}, 500
 
