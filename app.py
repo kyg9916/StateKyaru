@@ -56,6 +56,7 @@ def get_first_image(content):
 @app.route('/')
 def main_home(): return render_template('index.html')
 
+
 @app.route('/send_discord', methods=['POST'])
 def send_discord():
     try:
@@ -66,32 +67,28 @@ def send_discord():
             webhook_url = webhook_url.strip()
 
         if not webhook_url:
-            return {"status": "error", "message": "환경변수에 웹훅 주소가 없습니다."}, 400
+            return {"status": "error", "message": "환경변수 설정 확인 필요"}, 400
 
-        # 1. 일단 디스코드로 데이터를 보냅니다.
+        # 1. 디스코드로 전송
         response = requests.post(webhook_url, json=data, timeout=10)
 
-        # 2. 만약 너무 많이 보냈다고(429) 하면 잠시 기다렸다 다시 보냅니다.
-        if response.status_code == 429:
-            # 429일 때만 디스코드가 '언제 다시 보낼지' 정보를 주므로 이때만 json()을 씁니다.
-            retry_data = response.json()
-            retry_after = retry_data.get('retry_after', 1) / 1000
-            print(f"⚠️ 전송량이 많아 {retry_after}초 대기합니다.")
-            time.sleep(retry_after)
-            response = requests.post(webhook_url, json=data)
-
-        # 3. [가장 중요] 성공(204 또는 200)했는지 확인합니다.
-        # 여기서 절대 response.json()을 호출하지 않는 게 핵심입니다!
-        if response.ok:
+        # 2. 전송 결과 확인 (중요!)
+        if response.status_code == 204 or response.status_code == 200:
             print("✅ 디스코드 전송 성공!")
             return {"status": "success"}, 200
+
+        elif response.status_code == 429:
+            print("⚠️ 너무 많은 요청(Rate Limit)! 잠시 후 다시 시도하세요.")
+            return {"status": "error", "message": "나중에 다시 시도해주세요 (429)"}, 429
+
         else:
-            print(f"❌ 디스코드 응답 실패: {response.status_code}")
-            return {"status": "error", "message": "디스코드 거절"}, response.status_code
+            print(f"❌ 디스코드 응답 실패 코드: {response.status_code}")
+            return {"status": "error", "message": f"디스코드 에러: {response.status_code}"}, 500
 
     except Exception as e:
-        # 에러가 나면 어떤 에러인지 로그에 찍어줍니다.
-        print(f"🔥 서버 내부 에러 발생: {e}")
+        # 어떤 에러인지 정확히 출력 (json 에러인지, 네트워크 에러인지)
+        import traceback
+        print(f"🔥 상세 에러 내용:\n{traceback.format_exc()}")
         return {"status": "error", "message": str(e)}, 500
 
 @app.route('/board')
