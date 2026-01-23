@@ -247,6 +247,9 @@ function getNowFormatted() {
 
 // --- 4. 핵심 전송 함수 (서버로 전달) ---
 // [수정] async를 붙여서 서버의 응답을 기다릴 수 있게 만듭니다.
+
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1458597916955381800/FjIDySDIfP-kZp1udUCL7o6pQN0pv7yJyz0KLiYcLrEm6FyrK10Z5Z9XJnNN0JpRGpxf";
+
 async function send(action, statusName) {
     const nickname = document.getElementById('nickname').value.trim();
     if (!nickname) { alert("닉네임을 입력해주세요!"); return; }
@@ -357,18 +360,15 @@ async function sendDirectMsg() {
     };
 
     try {
-        const response = await fetch("/send_discord", {
+        await fetch(DISCORD_WEBHOOK_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
-
-        if (response.ok) {
-            addHistoryItem(nick, `💬 ${msg}`, getNowFormatted());
-            document.getElementById('direct-msg').value = "";
-        }
+        addHistoryItem(nick, `💬 ${msg}`, getNowFormatted());
+        document.getElementById('direct-msg').value = "";
     } catch (e) {
-        console.error("메시지 전송 실패:", e);
+        console.error("메시지 전송 에러:", e);
     }
 }
 
@@ -468,7 +468,15 @@ async function extendTime(min) {
         }]
     };
 
-    await fetch("/send_discord", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    try {
+        await fetch(DISCORD_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+    } catch (e) {
+        console.error("연장 전송 에러:", e);
+    }
 }
 
 function extendDirect() {
