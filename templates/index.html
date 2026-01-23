@@ -407,11 +407,18 @@ function toggleAFKMode() {
 
 function resetAFKTimer() {
     if (!isAFKMode) return;
+
+    // 현재 '복귀' 상태가 아닐 때(즉, 무언가 상태가 설정되어 있을 때)만 딱 한 번 실행!
     const currentData = localStorage.getItem('currentStatus');
-    if (currentData) {
+    if (currentData && !isProcessingBack) {
+        isProcessingBack = true; // 중복 실행 방지 락(Lock) 걸기
         send('back', '복귀');
         if (Notification.permission === 'granted') new Notification("상태 알림", { body: "활동 감지! 자동 복귀되었습니다." });
+
+        // 3초 뒤에 다시 락 해제 (연타 방지)
+        setTimeout(() => { isProcessingBack = false; }, 3000);
     }
+
     clearTimeout(afkTimer);
     afkTimer = setTimeout(() => {
         if (!localStorage.getItem('currentStatus')) send('nap', '자동 잠수');

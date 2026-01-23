@@ -57,26 +57,30 @@ def get_first_image(content):
 @app.route('/')
 def main_home(): return render_template('index.html')
 
-
 @app.route('/send_discord', methods=['POST'])
 def send_discord():
     data = request.json
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
 
-    # 주소 앞뒤에 혹시 모를 공백이 있다면 제거해주는 안전장치 추가!
     if webhook_url:
         webhook_url = webhook_url.strip()
 
     if not webhook_url:
-        print("❌ 에러: DISCORD_WEBHOOK_URL 환경변수가 없습니다!")
         return {"status": "error", "message": "웹훅 주소가 설정되지 않았습니다."}, 500
 
-    # 디스코드로 전송!
+    # 1. 일단 디스코드로 전송!
     response = requests.post(webhook_url, json=data)
 
-    # 만약 전송에 실패했다면(주소가 틀렸거나 형식이 틀렸다면) 서버 로그에 찍기
+    # 2. 만약 "너무 많이 보냈어(429)"라고 하면?
+    if response.status_code == 429:
+        # 디스코드가 "몇 초 뒤에 다시 해"라고 알려주는 시간을 확인
+        retry_after = response.json().get('retry_after', 1) / 1000  # 밀리초를 초 단위로 변환
+        print(f"⚠️ 너무 빨라요! {retry_after}초 후 다시 시도합니다.")
+        time.sleep(retry_after)  # 잠깐 쉬기
+        response = requests.post(webhook_url, json=data)  # 한 번 더 시도
+
     if response.status_code != 204:
-        print(f"❌ 디스코드 전송 실패! 상태코드: {response.status_code}, 응답내용: {response.text}")
+        print(f"❌ 최종 전송 실패! 상태코드: {response.status_code}")
         return {"status": "error", "message": "디스코드 전송 실패"}, response.status_code
 
     print("✅ 디스코드 알람 전송 성공!")
