@@ -60,19 +60,26 @@ def main_home(): return render_template('index.html')
 
 @app.route('/send_discord', methods=['POST'])
 def send_discord():
-    # 1. HTML에서 보낸 데이터를 받습니다.
     data = request.json
-
-    # 2. 환경변수에 숨겨둔 진짜 디스코드 주소를 가져옵니다.
-    # (Render 설정창에 DISCORD_WEBHOOK_URL 이라는 이름으로 주소를 저장해두세요!)
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
 
+    # 주소 앞뒤에 혹시 모를 공백이 있다면 제거해주는 안전장치 추가!
+    if webhook_url:
+        webhook_url = webhook_url.strip()
+
     if not webhook_url:
+        print("❌ 에러: DISCORD_WEBHOOK_URL 환경변수가 없습니다!")
         return {"status": "error", "message": "웹훅 주소가 설정되지 않았습니다."}, 500
 
-    # 3. 서버가 대신 디스코드로 쏩니다!
+    # 디스코드로 전송!
     response = requests.post(webhook_url, json=data)
 
+    # 만약 전송에 실패했다면(주소가 틀렸거나 형식이 틀렸다면) 서버 로그에 찍기
+    if response.status_code != 204:
+        print(f"❌ 디스코드 전송 실패! 상태코드: {response.status_code}, 응답내용: {response.text}")
+        return {"status": "error", "message": "디스코드 전송 실패"}, response.status_code
+
+    print("✅ 디스코드 알람 전송 성공!")
     return {"status": "success"}, 204
 
 @app.route('/board')
