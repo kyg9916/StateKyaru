@@ -9,6 +9,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from models import db, Post, Comment
 from services import services_bp
 from plum_plan import calendar_bp
+import time
 
 if 'calendar' in sys.modules:
     del sys.modules['calendar']
@@ -59,32 +60,39 @@ def main_home(): return render_template('index.html')
 
 @app.route('/send_discord', methods=['POST'])
 def send_discord():
-    data = request.json
-    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
+    try:
+        data = request.json
+        webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
 
-    if webhook_url:
-        webhook_url = webhook_url.strip()
+        if webhook_url:
+            webhook_url = webhook_url.strip()
 
-    if not webhook_url:
-        return {"status": "error", "message": "웹훅 주소가 설정되지 않았습니다."}, 500
+        if not webhook_url:
+            return {"status": "error", "message": "웹훅 주소 없음"}, 400
 
-    # 1. 일단 디스코드로 전송!
-    response = requests.post(webhook_url, json=data)
+        # 전송 시도
+        response = requests.post(webhook_url, json=data)
 
-    # 2. 만약 "너무 많이 보냈어(429)"라고 하면?
-    if response.status_code == 429:
-        # 디스코드가 "몇 초 뒤에 다시 해"라고 알려주는 시간을 확인
-        retry_after = response.json().get('retry_after', 1) / 1000  # 밀리초를 초 단위로 변환
-        print(f"⚠️ 너무 빨라요! {retry_after}초 후 다시 시도합니다.")
-        time.sleep(retry_after)  # 잠깐 쉬기
-        response = requests.post(webhook_url, json=data)  # 한 번 더 시도
+        # 2. 429(너무 많이 보냄) 에러일 때만 json을 확인하도록 수정!
+        if response.status_code == 429:
+            # 429일 때는 디스코드가 'retry_after'라는 정보를 담은 JSON을 줍니다.
+            retry_data = response.json()
+            retry_after = retry_data.get('retry_after', 1) / 1000
+            print(f"⚠️ 너무 빨라요! {retry_after}초 후 다시 시도합니다.")
+            time.sleep(retry_after)
+            response = requests.post(webhook_url, json=data)
 
-    if response.status_code != 204:
-        print(f"❌ 최종 전송 실패! 상태코드: {response.status_code}")
-        return {"status": "error", "message": "디스코드 전송 실패"}, response.status_code
+        # 3. 성공 여부 확인 (200~299 사이면 성공!)
+        if response.ok:
+            print("✅ 디스코드 알람 전송 성공!")
+            return {"status": "success"}, 200
+        else:
+            print(f"❌ 전송 실패! 상태코드: {response.status_code}")
+            return {"status": "error", "message": "디스코드 응답 에러"}, response.status_code
 
-    print("✅ 디스코드 알람 전송 성공!")
-    return {"status": "success"}, 204
+    except Exception as e:
+        print(f"🔥 서버 내부 에러: {e}")
+        return {"status": "error", "message": str(e)}, 500
 
 @app.route('/board')
 def index():
