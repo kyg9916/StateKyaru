@@ -68,30 +68,31 @@ def send_discord():
             webhook_url = webhook_url.strip()
 
         if not webhook_url:
-            return {"status": "error", "message": "웹훅 주소 없음"}, 400
+            print("❌ 에러: DISCORD_WEBHOOK_URL 환경변수가 없습니다!")
+            return {"status": "error", "message": "웹훅 주소 미설정"}, 400
 
-        # 전송 시도
-        response = requests.post(webhook_url, json=data)
+        # 디스코드로 전송!
+        response = requests.post(webhook_url, json=data, timeout=10)
 
-        # 2. 429(너무 많이 보냄) 에러일 때만 json을 확인하도록 수정!
+        # ✅ 2. 429(Rate Limit) 에러 발생 시 처리
         if response.status_code == 429:
-            # 429일 때는 디스코드가 'retry_after'라는 정보를 담은 JSON을 줍니다.
-            retry_data = response.json()
-            retry_after = retry_data.get('retry_after', 1) / 1000
+            retry_after = response.json().get('retry_after', 1) / 1000
             print(f"⚠️ 너무 빨라요! {retry_after}초 후 다시 시도합니다.")
             time.sleep(retry_after)
             response = requests.post(webhook_url, json=data)
 
-        # 3. 성공 여부 확인 (200~299 사이면 성공!)
+        # ✅ 3. 성공 여부 확인 (200~299 사이면 모두 성공)
+        # response.json()을 함부로 호출하지 않게 수정했습니다!
         if response.ok:
             print("✅ 디스코드 알람 전송 성공!")
             return {"status": "success"}, 200
         else:
-            print(f"❌ 전송 실패! 상태코드: {response.status_code}")
-            return {"status": "error", "message": "디스코드 응답 에러"}, response.status_code
+            print(f"❌ 디스코드 응답 에러! 상태코드: {response.status_code}")
+            return {"status": "error", "message": "디스코드 전송 실패"}, response.status_code
 
     except Exception as e:
-        print(f"🔥 서버 내부 에러: {e}")
+        # ✅ 4. 어떤 에러인지 정확히 로그에 찍어줍니다.
+        print(f"🔥 서버 내부 에러 발생: {e}")
         return {"status": "error", "message": str(e)}, 500
 
 @app.route('/board')
