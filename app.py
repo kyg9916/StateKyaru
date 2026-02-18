@@ -21,39 +21,29 @@ app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024
 database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    # 1. 주소 변환 (postgres -> postgresql)
+    # 1. Render 주소의 'postgres://'를 'postgresql://'로 변환
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-    # 2. SSL 옵션 추가 (주소에 ?가 없을 때만 실행)
+    # 2. 주소 뒤에 SSL 옵션이 없다면 붙여줌
     if "?" not in database_url:
         database_url += "?sslmode=require"
 
-    # 3. 최종 완성된 주소를 설정에 넣기
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    print("✅ 배포 환경 DB 설정 완료")
 
-else:
-    # 로컬 환경 (기존 코드와 동일)
-    try:
-        db_setup_conn = pymysql.connect(host='localhost', user='root', password='1234')
-        cursor = db_setup_conn.cursor()
-        cursor.execute("CREATE DATABASE IF NOT EXISTS greenplum_db")
-        db_setup_conn.close()
-    except Exception as e:
-        print(f"로컬 DB 생성 알림: {e}")
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1234@localhost:3306/greenplum_db'
-    print("🏠 로컬 환경 DB 설정 완료")
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-if os.environ.get('DATABASE_URL'):
+    # 3. ⭐ 엔진 옵션 강제 설정 (SSL 에러 잡는 핵심)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         "connect_args": {
             "sslmode": "require"
         }
     }
+    print("✅ 배포 환경 DB 설정 완료")
+else:
+    # 로컬 환경 (기존과 동일)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1234@localhost:3306/greenplum_db'
+    print("🏠 로컬 환경 DB 설정 완료")
 
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 # 3. 블루프린트 등록
