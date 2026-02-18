@@ -46,6 +46,14 @@ else:
     print("🏠 로컬 환경 DB 설정 완료")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+if os.environ.get('DATABASE_URL'):
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "connect_args": {
+            "sslmode": "require"
+        }
+    }
+
 db.init_app(app)
 
 # 3. 블루프린트 등록
