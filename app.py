@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import sys
 import os
 import re
 import pymysql
@@ -9,8 +8,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from models import db, Post, Comment
 from services import services_bp
 from plum_plan import calendar_bp
-import time
-
+from youtube_subscribe import youtube_bp
 
 print("YOUTUBE API 키 로드됨:", bool(os.environ.get('MY_YOUTUBE_KEY')))
 print("GEMINI API 키 로드됨:", bool(os.environ.get('MY_GEMINI_KEY')))
@@ -42,6 +40,11 @@ db.init_app(app)
 # 3. 블루프린트 등록
 app.register_blueprint(services_bp)
 app.register_blueprint(calendar_bp)
+app.register_blueprint(youtube_bp, url_prefix='/youtube_sub')
+
+@app.route('/youtube_home')
+def youtube_main():
+    return "유튜브 구독자 정리기 메인 페이지입니다! 주소창 뒤에 /subscribers?channel_id=본인ID 를 넣어보세요."
 
 # --- 이하 모델 정의 및 라우트(동일함) ---
 # (Post, Comment 모델 정의 및 @app.route 코드들...)

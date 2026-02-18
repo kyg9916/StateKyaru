@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="w-full max-w-6xl mx-auto py-10 px-6 space-y-12 input-animate">
+
+    <div class="glass rounded-[2.5rem] p-12 text-center shadow-2xl shadow-gray-200/50">
+        <h2 class="text-4xl font-black text-gray-800 mb-3 tracking-tighter">📺 유튜브 구독 통합 관리</h2>
+        <p class="text-gray-500 mb-10 font-medium">
+            현재 <span class="text-red-500 font-bold text-xl">{{ total_count if total_count else 0 }}</span>명의 구독 채널을 분석 중입니다.
+        </p>
+
+        <div class="flex justify-center">
+            <form action="/youtube/subscribers" method="GET" class="flex gap-3 w-full max-w-2xl">
+                <input type="text" name="channel_id"
+                       class="flex-1 px-8 py-5 rounded-3xl border border-gray-100 bg-gray-50/50 focus:ring-4 focus:ring-red-100 focus:border-red-400 transition-all outline-none font-bold text-gray-700 shadow-inner"
+                       placeholder="분석할 채널 ID (UC...)를 입력하세요"
+                       value="{{ searched_id if searched_id else '' }}">
+                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-10 py-5 rounded-3xl font-black shadow-xl shadow-red-200 transition-all active:scale-95">
+                    분석 시작
+                </button>
+            </form>
+        </div>
+        <p class="mt-4 text-xs text-gray-400 font-medium">* 구독 목록이 '공개' 설정된 채널만 분석이 가능합니다.</p>
+        <p class="mt-4 text-xs text-gray-400 font-medium">* api 무료 사용 문제로 지금은 50명으로 제한되어 있습니다. 더 많은 구독자수를 보고 싶다면 본인의 youtubeAPI 키를 사용하십시오.</p>
+    </div>
+
+    {% if active_top5 %}
+    <div class="space-y-6">
+        <h4 class="text-2xl font-black text-gray-800 flex items-center gap-3">
+            <span class="w-2.5 h-10 bg-green-500 rounded-full"></span> 지금 막 올라온 소식 (TOP 5)
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-5">
+            {% for channel in active_top5 %}
+            <div class="glass p-6 rounded-[2rem] border-t-8 border-green-400 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
+                <h6 class="font-black text-gray-800 truncate mb-2">{{ channel.name }}</h6>
+                <div class="bg-green-50 text-green-600 text-xs font-black px-3 py-1.5 rounded-full inline-block">
+                    {{ channel.days_inactive }}일 전 업로드
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        <h4 class="text-2xl font-black text-gray-800 flex items-center gap-3">
+            <span class="w-2.5 h-10 bg-gray-400 rounded-full"></span> 30일 이상 무소식
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+            {% for channel in inactive_list %}
+            <div class="glass p-6 rounded-[2rem] border-t-8 border-gray-300 opacity-90 hover:opacity-100 transition-all">
+                <h6 class="font-bold text-gray-700 truncate mb-2">{{ channel.name }}</h6>
+                <p class="text-sm text-red-500 font-black">
+                    <i class="fa-solid fa-clock-rotate-left"></i> {{ channel.days_inactive }}일째 휴식 중
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="pt-10 border-t-2 border-dashed border-gray-200">
+        <div class="flex justify-between items-center mb-8">
+            <h4 class="text-2xl font-black text-gray-800">📋 전체 구독 목록</h4>
+            <button onclick="toggleList()" class="px-8 py-3 rounded-2xl bg-white border-2 border-gray-100 font-black text-gray-600 hover:bg-gray-50 transition-all shadow-sm">
+                목록 보기 / 접기 <i class="fa-solid fa-chevron-down ms-2 transition-transform duration-300" id="arrow-icon"></i>
+            </button>
+        </div>
+
+        <div id="subListWrapper" class="hidden">
+            <div class="glass rounded-[2.5rem] overflow-hidden shadow-inner border border-gray-100">
+                <div class="divide-y divide-gray-100">
+                    {% for sub in all_subscribers %}
+                    <div class="px-10 py-5 flex justify-between items-center hover:bg-red-50/30 transition-all">
+                        <span class="font-bold text-gray-700 text-lg">{{ sub.name }}</span>
+                        <div class="text-right">
+                            <p class="text-sm font-black text-gray-400 mb-0">마지막 활동</p>
+                            <p class="text-sm font-bold text-blue-500">
+                                {{ sub.last_upload_date.strftime('%Y-%m-%d') if sub.last_upload_date else '기록 없음' }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function toggleList() {
+        const listWrapper = document.getElementById('subListWrapper');
+        const arrow = document.getElementById('arrow-icon');
+
+        // Tailwind의 hidden 클래스를 껐다 켰다(toggle) 합니다.
+        listWrapper.classList.toggle('hidden');
+
+        // 아이콘을 180도 회전시키는 보너스 효과!
+        arrow.classList.toggle('rotate-180');
+    }
+</script>
+{% endblock %}

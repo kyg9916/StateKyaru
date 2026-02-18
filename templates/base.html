@@ -114,11 +114,13 @@
             </div>
 
             <div onclick="location.href='/youtube_music_shuffle'" class="nav-item {{ 'active' if request.path == '/youtube_music_shuffle' else '' }}">
-                <i class="fa-solid fa-cloud-arrow-down"></i> 유튜브 재생목록 다운로더
+                <i class="fa-solid fa-shuffle"></i> 유튜브 재생목록 다운로더
             </div>
-        </div>
 
-        <div class="pt-6 border-t border-gray-100 px-4">
+            <div onclick="location.href='/youtube_sub/subscribers'" class="nav-item {{ 'active' if request.path == '/youtube_sub/subscribers' else '' }}">
+                <i class="fa-solid fa-chart-line"></i> 구독 채널 대시보드
+            </div>
+        </div> <div class="pt-6 border-t border-gray-100 px-4">
             <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Developer</p>
             <p class="text-sm font-bold text-gray-700 mt-1">초록자두 (Green Plum)</p>
         </div>

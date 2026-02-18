@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>초록자두의 커스텀 뽑기</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #1e1e2e; color: #eff1f5; text-align: center; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background: #313244; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+        /* 입력창 스타일 */
+        input { padding: 10px; border-radius: 8px; border: 1px solid #45475a; background: #1e1e2e; color: white; margin: 5px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-add { background: #89b4fa; color: #1e1e2e; }
+        .btn-start { background: #a6e3a1; color: #1e1e2e; width: 100%; margin-top: 15px; }
+
+        /* 닉네임 리스트 태그 */
+        #name-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 15px 0; }
+        .name-tag { background: #45475a; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid #89b4fa; }
+
+        /* 공 뽑기 기계 화면 */
+        #machine {
+            width: 250px; height: 180px; border: 4px solid #f5e0dc; border-radius: 40px 40px 10px 10px;
+            margin: 20px auto; position: relative; overflow: hidden; background: #181825;
+        }
+        .small-ball {
+            width: 25px; height: 25px; border-radius: 50%; position: absolute;
+            animation: shuffle 0.4s infinite;
+        }
+        @keyframes shuffle {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(150px, -80px); }
+        }
+
+        #lucky-ball {
+            width: 120px; height: 120px; background: radial-gradient(circle at 30%, #f9e2af, #fab387);
+            border-radius: 50%; margin: 20px auto; line-height: 120px; font-size: 1.5rem;
+            color: #11111b; font-weight: bold; display: none; border: 5px solid #fff;
+        }
+        .show { display: block !important; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+
+        .rank-list { text-align: left; background: #181825; padding: 15px; border-radius: 12px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎯 닉네임 순차 뽑기</h1>
+
+    <div id="setup-step">
+        <h3>1. 최대 등수(인원) 설정</h3>
+        <input type="number" id="maxCount" placeholder="예: 6" min="1" max="10">
+        <hr style="border: 0.5px solid #45475a; margin: 20px 0;">
+
+        <h3>2. 참가자 추가 (최대 10명)</h3>
+        <input type="text" id="nameInput" placeholder="닉네임 입력">
+        <button class="btn btn-add" onclick="addName()">추가</button>
+        <div id="name-list"></div>
+
+        <button id="startBtn" class="btn btn-start" onclick="readyGame()" style="display:none;">모두 추가 완료! 게임 시작</button>
+    </div>
+
+    <div id="game-step" style="display:none;">
+        <div id="machine"></div>
+        <div id="lucky-ball"></div>
+        <h3 id="status-msg"></h3>
+        <button class="btn btn-add" id="drawBtn" onclick="pickNext()">다음 등수 뽑기!</button>
+
+        <div class="rank-list">
+            <strong>🏆 당첨 결과:</strong>
+            <div id="rank-container"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let names = []; // 닉네임을 저장할 리스트(Array)
+    let maxRank = 0;
+    let currentRank = 1;
+
+    // 1. 닉네임 추가 로직
+    function addName() {
+        const input = document.getElementById('nameInput');
+        const name = input.value.trim();
+
+        if (name === "") return;
+        if (names.length >= 10) {
+            alert("최대 10명까지만 추가할 수 있습니다!");
+            return;
+        }
+
+        names.push(name); // 배열에 추가
+        input.value = ""; // 입력창 비우기
+        renderNames();
+
+        // 1명이라도 추가되면 시작 버튼 보이기
+        if (names.length > 0) document.getElementById('startBtn').style.display = 'block';
+    }
+
+    // 닉네임 태그 그리기
+    function renderNames() {
+        const listDiv = document.getElementById('name-list');
+        listDiv.innerHTML = names.map(n => `<span class="name-tag">${n}</span>`).join('');
+    }
+
+    // 2. 게임 시작 준비
+    function readyGame() {
+        maxRank = parseInt(document.getElementById('maxCount').value);
+        if (isNaN(maxRank) || maxRank < 1) {
+            alert("최대 등수를 설정해 주세요!");
+            return;
+        }
+
+        document.getElementById('setup-step').style.display = 'none';
+        document.getElementById('game-step').style.display = 'block';
+
+        // 머신에 가짜 공들 넣기
+        const machine = document.getElementById('machine');
+        for (let i = 0; i < 8; i++) {
+            const b = document.createElement('div');
+            b.className = 'small-ball';
+            b.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 70%)`;
+            b.style.left = Math.random() * 200 + 'px';
+            b.style.top = Math.random() * 150 + 'px';
+            b.style.animationDelay = (Math.random() * 0.5) + 's';
+            machine.appendChild(b);
+        }
+        updateStatus();
+    }
+
+    // 3. 순차적으로 뽑기
+    function pickNext() {
+        if (currentRank > maxRank || names.length === 0) return;
+
+        const ball = document.getElementById('lucky-ball');
+        const drawBtn = document.getElementById('drawBtn');
+        drawBtn.disabled = true;
+        ball.classList.remove('show');
+
+        setTimeout(() => {
+            // 랜덤으로 이름 하나 선택 후 배열에서 제거
+            const idx = Math.floor(Math.random() * names.length);
+            const winner = names.splice(idx, 1)[0];
+
+            ball.innerText = winner;
+            ball.classList.add('show');
+
+            const container = document.getElementById('rank-container');
+            container.innerHTML += `<div>🏅 ${currentRank}등: <strong>${winner}</strong></div>`;
+
+            currentRank++;
+            updateStatus();
+            drawBtn.disabled = false;
+
+            if (currentRank > maxRank || names.length === 0) {
+                drawBtn.innerText = "뽑기 종료";
+                drawBtn.disabled = true;
+            }
+        }, 800);
+    }
+
+    function updateStatus() {
+        document.getElementById('status-msg').innerText = `${currentRank}등을 뽑을 차례입니다!`;
+    }
+</script>
+
+</body>
+</html>

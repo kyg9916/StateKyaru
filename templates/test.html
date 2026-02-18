@@ -1,346 +1,224 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi Converter - 초록자두</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            display: flex;
-            min-height: 100vh;
-        }
+{% extends "base.html" %}
 
-        /* 사이드바 스타일 */
-        .sidebar {
-            width: 280px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(255, 255, 255, 0.5);
-            display: flex;
-            flex-direction: column;
-            padding: 2rem 1.5rem;
-            position: fixed;
-            height: 100vh;
-            z-index: 50;
-        }
+{% block content %}
+<style>
+    /* 체크된 라벨 스타일 강조 */
+    input[name="format"]:checked + label,
+    input[name="mode"]:checked + label {
+        border-color: #ef4444;
+        background-color: #fef2f2;
+        color: #b91c1c;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+    }
 
-        .nav-item {
-            display: flex;
-            items-center: center;
-            padding: 1rem 1.25rem;
-            margin-bottom: 0.5rem;
-            border-radius: 1.25rem;
-            color: #64748b;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
+    .btn-glow { position: relative; transition: all 0.3s ease; overflow: hidden; }
+    .btn-glow:hover { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); transform: translateY(-3px); }
+    
+    /* 입력창 애니메이션 */
+    .input-animate { animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-10px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+</style>
 
-        .nav-item i { margin-right: 12px; font-size: 1.2rem; }
+<div class="glass p-8 rounded-[2.5rem] shadow-2xl w-full max-w-lg border border-white">
+    <div class="text-center mb-10">
+        <div class="relative inline-block">
+            <div class="bg-gradient-to-tr from-red-500 to-pink-500 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl rotate-6 transition-transform hover:rotate-0 duration-500">
+                <i class="fa-brands fa-youtube text-white text-4xl"></i>
+            </div>
+            <span class="absolute -top-1 -right-1 flex h-4 w-4">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
+            </span>
+        </div>
+        <h1 class="text-3xl font-black text-gray-800 tracking-tight">Multi Converter</h1>
+        <p class="text-gray-500 text-sm mt-2 font-medium">유튜브 재생목록을 한 번에 저장하세요!</p>
+    </div>
 
-        .nav-item:hover {
-            background: rgba(239, 68, 68, 0.05);
-            color: #ef4444;
-            transform: translateX(5px);
-        }
-
-        .nav-item.active {
-            background: #ef4444;
-            color: white;
-            box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.3);
-        }
-
-        /* 메인 컨텐츠 영역 */
-        .main-content {
-            margin-left: 280px;
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-        }
-
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.6); }
-
-        input[name="format"]:checked + label,
-        input[name="mode"]:checked + label {
-            border-color: #ef4444;
-            background-color: #fef2f2;
-            color: #b91c1c;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
-        }
-
-        .btn-glow { position: relative; transition: all 0.3s ease; overflow: hidden; }
-        .btn-glow:hover { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); transform: translateY(-3px); }
-        .input-animate { animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-    </style>
-</head>
-<body>
-
-    <nav class="sidebar">
-        <div class="mb-12 px-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-red-200">
-                    <i class="fa-solid fa-bolt text-white"></i>
+    <form id="download-form" onsubmit="goToNotice(event)" class="space-y-8">
+        <div class="space-y-3">
+            <div class="flex items-center justify-between px-1">
+                <label class="text-sm font-bold text-gray-700 flex items-center">
+                    <i class="fa-solid fa-link mr-2 text-red-500"></i> 유튜브 주소
+                </label>
+                <div class="flex gap-1.5">
+                    <button type="button" onclick="addInputs(4)" class="text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold px-3 py-1.5 rounded-full transition">다중 +4</button>
+                    <button type="button" onclick="addInputs(1)" class="text-[11px] bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-1.5 rounded-full transition">추가 +1</button>
                 </div>
-                <span class="text-xl font-black text-gray-800 tracking-tighter">Green Plum</span>
+            </div>
+            <div id="input-container" class="space-y-3">
+                <div class="relative input-animate group">
+                    <span class="absolute left-4 top-3.5 text-red-400 text-xs font-bold group-focus-within:scale-110 transition-transform">1</span>
+                    <input type="url" name="urls[]" placeholder="여기에 유튜브 주소를 붙여넣으세요"
+                        class="w-full pl-9 pr-4 py-3.5 rounded-2xl border border-gray-100 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-400 outline-none transition-all text-sm shadow-inner" required>
+                </div>
             </div>
         </div>
 
-        <div class="flex-1 space-y-2">
-    <div onclick="location.href='/'" class="nav-item cursor-pointer">
-        <i class="fa-solid fa-house"></i> 홈으로
+        <div class="space-y-3">
+            <label class="block text-sm font-bold text-gray-700 px-1">
+                <i class="fa-solid fa-sliders mr-2 text-red-500"></i> 추출 모드
+            </label>
+            <div class="grid grid-cols-2 gap-4">
+                <input type="radio" id="mode_audio" name="mode" value="audio" class="hidden" checked onclick="toggleFormat(true)">
+                <label for="mode_audio" class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-transparent bg-gray-50 cursor-pointer transition-all duration-300">
+                    <i class="fa-solid fa-music mb-2 text-xl text-red-500"></i>
+                    <span class="text-sm font-bold tracking-tight">음원 추출</span>
+                </label>
+                <input type="radio" id="mode_video" name="mode" value="video" class="hidden" onclick="toggleFormat(false)">
+                <label for="mode_video" class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-transparent bg-gray-50 cursor-pointer transition-all duration-300">
+                    <i class="fa-solid fa-video mb-2 text-xl text-blue-500"></i>
+                    <span class="text-sm font-bold tracking-tight">영상 저장 (720p)</span>
+                </label>
+            </div>
+        </div>
+
+        <div id="format-selection-area" class="space-y-3">
+            <label class="block text-sm font-bold text-gray-700 px-1">
+                <i class="fa-solid fa-file-export mr-2 text-red-500"></i> 상세 포맷
+            </label>
+            <div class="grid grid-cols-1 gap-2.5">
+                <input type="radio" id="fmt_mp3" name="format" value="mp3" class="hidden" checked>
+                <label for="fmt_mp3" class="flex items-center p-3.5 rounded-2xl border-2 border-transparent bg-gray-50 cursor-pointer transition-all duration-300">
+                    <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
+                        <span class="text-blue-600 font-bold text-xs">MP3</span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-800">고음질 오디오</p>
+                        <p class="text-[11px] text-gray-400">가장 널리 사용되는 표준 포맷</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <button type="submit" id="submit-btn"
+            class="btn-glow w-full bg-gradient-to-r from-red-500 via-red-600 to-pink-600 text-white font-black py-5 rounded-[1.5rem] shadow-xl shadow-red-200 flex items-center justify-center text-lg gap-3">
+            <i class="fa-solid fa-wand-magic-sparkles animate-pulse"></i>
+            <span>무료 추출 시작하기</span>
+        </button>
+    </form>
+
+    <div id="status" class="hidden mt-10 p-8 bg-white rounded-[2.5rem] border border-gray-50 text-center shadow-2xl">
+        <div class="relative w-20 h-20 mx-auto mb-6">
+            <div class="absolute inset-0 border-4 border-red-100 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-red-500 rounded-full border-t-transparent animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center text-red-500">
+                <i class="fa-solid fa-bolt text-2xl"></i>
+            </div>
+        </div>
+        <p class="text-xl font-black text-gray-800 mb-2" id="status-title">추출 준비 중...</p>
     </div>
 
-    <div onclick="location.href='/youtube_comment'" class="nav-item cursor-pointer">
-        <i class="fa-solid fa-comments"></i> 유튜브 댓글 여론
-    </div>
-
-    <div onclick="location.href='/youtube'" class="nav-item active cursor-pointer">
-        <i class="fa-solid fa-layer-group"></i> 유튜브 음원 멀티 다운로더
-    </div>
-
-    <div onclick="location.href='/youtube_music_shuffle'" class="nav-item cursor-pointer">
-        <i class="fa-solid fa-cloud-arrow-down"></i> 유튜브 재생목록 다운로더
+    <div id="error-box" class="hidden mt-8 p-6 bg-red-50 border border-red-100 rounded-[2rem] text-center">
+        <i class="fa-solid fa-triangle-exclamation text-4xl text-red-400 mb-3"></i>
+        <p id="error-summary" class="text-red-700 font-bold text-sm mb-4"></p>
+        <button type="button" onclick="resetUI()" class="bg-white text-red-600 font-bold px-6 py-2.5 rounded-full shadow-sm hover:shadow-md transition text-xs">다시 시도</button>
     </div>
 </div>
 
-        <div class="pt-6 border-t border-gray-100 px-4">
-            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Developer</p>
-            <p class="text-sm font-bold text-gray-700 mt-1">초록자두 (Green Plum)</p>
-        </div>
-    </nav>
+<script>
+    let inputCount = 1;
+    const MAX_INPUTS = 5;
 
-    <main class="main-content">
-        <div class="glass p-8 rounded-[2.5rem] shadow-2xl w-full max-w-lg border border-white">
-            <div class="text-center mb-10">
-                <div class="relative inline-block">
-                    <div class="bg-gradient-to-tr from-red-500 to-pink-500 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl rotate-6 transition-transform hover:rotate-0 duration-500">
-                        <i class="fa-brands fa-youtube text-white text-4xl"></i>
-                    </div>
-                    <span class="absolute -top-1 -right-1 flex h-4 w-4">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
-                    </span>
-                </div>
-                <h1 class="text-3xl font-black text-gray-800 tracking-tight">Multi Converter</h1>
-                <p class="text-gray-500 text-sm mt-2 font-medium">유튜브 재생목록을 한 번에 저장하세요!</p>
-            </div>
+    function toggleFormat(isAudio) {
+        const formatArea = document.getElementById('format-selection-area');
+        const statusTitle = document.getElementById('status-title');
+        formatArea.style.display = isAudio ? 'block' : 'none';
+        statusTitle.innerText = isAudio ? '✨ 음원을 열심히 굽고 있어요!' : '🎬 영상을 고화질로 준비하고 있어요!';
+    }
 
-            <form id="download-form" onsubmit="goToNotice(event)" class="space-y-8">
-
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between px-1">
-                        <label class="text-sm font-bold text-gray-700 flex items-center">
-                            <i class="fa-solid fa-link mr-2 text-red-500"></i> 유튜브 주소
-                        </label>
-                        <div class="flex gap-1.5">
-                            <button type="button" onclick="addInputs(4)" class="text-[11px] bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold px-3 py-1.5 rounded-full transition">다중 +4</button>
-                            <button type="button" onclick="addInputs(1)" class="text-[11px] bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-1.5 rounded-full transition">추가 +1</button>
-                        </div>
-                    </div>
-                    <div id="input-container" class="space-y-3">
-                        <div class="relative input-animate group">
-                            <span class="absolute left-4 top-3.5 text-red-400 text-xs font-bold group-focus-within:scale-110 transition-transform">1</span>
-                            <input type="url" name="urls[]" placeholder="여기에 유튜브 주소를 붙여넣으세요"
-                                class="w-full pl-9 pr-4 py-3.5 rounded-2xl border border-gray-100 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-400 outline-none transition-all text-sm shadow-inner" required>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-3">
-                    <label class="block text-sm font-bold text-gray-700 px-1">
-                        <i class="fa-solid fa-sliders mr-2 text-red-500"></i> 추출 모드
-                    </label>
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="radio" id="mode_audio" name="mode" value="audio" class="hidden" checked onclick="toggleFormat(true)">
-                        <label for="mode_audio" class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-transparent bg-gray-50 cursor-pointer transition-all duration-300">
-                            <i class="fa-solid fa-music mb-2 text-xl text-red-500"></i>
-                            <span class="text-sm font-bold tracking-tight">음원 추출</span>
-                        </label>
-                        <input type="radio" id="mode_video" name="mode" value="video" class="hidden" onclick="toggleFormat(false)">
-                        <label for="mode_video" class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-transparent bg-gray-50 cursor-pointer transition-all duration-300">
-                            <i class="fa-solid fa-video mb-2 text-xl text-blue-500"></i>
-                            <span class="text-sm font-bold tracking-tight">영상 저장 (720p)</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div id="format-selection-area" class="space-y-3">
-                    <label class="block text-sm font-bold text-gray-700 px-1">
-                        <i class="fa-solid fa-file-export mr-2 text-red-500"></i> 상세 포맷
-                    </label>
-                    <div class="grid grid-cols-1 gap-2.5">
-                        <input type="radio" id="fmt_mp3" name="format" value="mp3" class="hidden" checked>
-                        <label for="fmt_mp3" class="flex items-center p-3.5 rounded-2xl border-2 border-transparent bg-gray-50 cursor-pointer transition-all duration-300">
-                            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
-                                <span class="text-blue-600 font-bold text-xs">MP3</span>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-gray-800">고음질 오디오</p>
-                                <p class="text-[11px] text-gray-400">가장 널리 사용되는 표준 포맷</p>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
-                <button type="submit" id="submit-btn"
-                    class="btn-glow w-full bg-gradient-to-r from-red-500 via-red-600 to-pink-600 text-white font-black py-5 rounded-[1.5rem] shadow-xl shadow-red-200 flex items-center justify-center text-lg gap-3">
-                    <i class="fa-solid fa-wand-magic-sparkles animate-pulse"></i>
-                    <span>무료 추출 시작하기</span>
-                </button>
-            </form>
-
-            <div id="status" class="hidden mt-10 p-8 bg-white rounded-[2.5rem] border border-gray-50 text-center shadow-2xl">
-                <div class="relative w-20 h-20 mx-auto mb-6">
-                    <div class="absolute inset-0 border-4 border-red-100 rounded-full"></div>
-                    <div class="absolute inset-0 border-4 border-red-500 rounded-full border-t-transparent animate-spin"></div>
-                    <div class="absolute inset-0 flex items-center justify-center text-red-500">
-                        <i class="fa-solid fa-bolt text-2xl"></i>
-                    </div>
-                </div>
-                <p class="text-xl font-black text-gray-800 mb-2" id="status-title">추출 준비 중...</p>
-            </div>
-
-            <div id="error-box" class="hidden mt-8 p-6 bg-red-50 border border-red-100 rounded-[2rem] text-center">
-                <i class="fa-solid fa-triangle-exclamation text-4xl text-red-400 mb-3"></i>
-                <p id="error-summary" class="text-red-700 font-bold text-sm mb-4"></p>
-                <button type="button" onclick="resetUI()" class="bg-white text-red-600 font-bold px-6 py-2.5 rounded-full shadow-sm hover:shadow-md transition text-xs">다시 시도</button>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        // 기존 스크립트 내용 그대로 사용 (동작 보장)
-        let inputCount = 1;
-        const MAX_INPUTS = 5;
-
-        function toggleFormat(isAudio) {
-            const formatArea = document.getElementById('format-selection-area');
-            const statusTitle = document.getElementById('status-title');
-            formatArea.style.display = isAudio ? 'block' : 'none';
-            statusTitle.innerText = isAudio ? '✨ 음원을 열심히 굽고 있어요!' : '🎬 영상을 고화질로 준비하고 있어요!';
+    function addInputs(count) {
+        const container = document.getElementById('input-container');
+        if (inputCount >= MAX_INPUTS) return;
+        const available = MAX_INPUTS - inputCount;
+        const toAdd = Math.min(count, available);
+        for (let i = 0; i < toAdd; i++) {
+            inputCount++;
+            const newDiv = document.createElement('div');
+            newDiv.className = 'relative input-animate group';
+            newDiv.innerHTML = `
+                <span class="absolute left-4 top-3.5 text-gray-300 text-xs font-bold group-focus-within:text-red-400 transition-colors">${inputCount}</span>
+                <input type="url" name="urls[]" placeholder="추가 링크를 입력하세요" class="w-full pl-9 pr-12 py-3.5 rounded-2xl border border-gray-100 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-400 outline-none transition-all text-sm shadow-inner">
+                <button type="button" class="absolute right-4 top-3.5 text-gray-300 hover:text-red-500 transition-colors" onclick="removeInput(this)"><i class="fa-solid fa-circle-xmark"></i></button>
+            `;
+            container.appendChild(newDiv);
         }
+    }
 
-        function addInputs(count) {
-            const container = document.getElementById('input-container');
-            if (inputCount >= MAX_INPUTS) return;
-            const available = MAX_INPUTS - inputCount;
-            const toAdd = Math.min(count, available);
-            for (let i = 0; i < toAdd; i++) {
-                inputCount++;
-                const newDiv = document.createElement('div');
-                newDiv.className = 'relative input-animate group';
-                newDiv.innerHTML = `
-                    <span class="absolute left-4 top-3.5 text-gray-300 text-xs font-bold group-focus-within:text-red-400 transition-colors">${inputCount}</span>
-                    <input type="url" name="urls[]" placeholder="추가 링크를 입력하세요" class="w-full pl-9 pr-12 py-3.5 rounded-2xl border border-gray-100 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-red-50 focus:border-red-400 outline-none transition-all text-sm shadow-inner">
-                    <button type="button" class="absolute right-4 top-3.5 text-gray-300 hover:text-red-500 transition-colors" onclick="removeInput(this)"><i class="fa-solid fa-circle-xmark"></i></button>
-                `;
-                container.appendChild(newDiv);
-            }
-        }
+    function removeInput(button) {
+        button.parentElement.remove();
+        inputCount--;
+        updateNumbers();
+    }
 
-        function removeInput(button) {
-            button.parentElement.remove();
-            inputCount--;
-            updateNumbers();
-        }
+    function updateNumbers() {
+        document.querySelectorAll('#input-container span').forEach((span, idx) => { span.textContent = idx + 1; });
+    }
 
-        function updateNumbers() {
-            document.querySelectorAll('#input-container span').forEach((span, idx) => { span.textContent = idx + 1; });
-        }
-
-        function resetUI() {
-            document.getElementById('error-box').classList.add('hidden');
-            document.getElementById('status').classList.add('hidden');
-            document.getElementById('download-form').classList.remove('hidden');
-            document.getElementById('submit-btn').disabled = false;
-        }
-
-        async function startDownload(event) {
-    // 이미 goToNotice에서 preventDefault를 했으므로 여기선 생략 가능
-    const formData = new FormData(document.getElementById('download-form'));
-
-    try {
-        const response = await fetch('/download', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (response.ok) {
-            // [성공] 서버가 파일을 던져줌 -> .blob()으로 받아야 함!
-            const blob = await response.blob();
-            const contentDisposition = response.headers.get('Content-Disposition');
-            let fileName = 'download.zip';
-
-            if (contentDisposition) {
-                const fileNameMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/);
-                if (fileNameMatch) fileName = decodeURIComponent(fileNameMatch[1]);
-            }
-
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-            resetUI();
-        } else {
-            // [실패] 서버가 JSON으로 에러 메시지를 보냄
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
-            } else {
-                throw new Error("서버 연결에 실패했습니다.");
-            }
-        }
-    } catch (error) {
-        console.error(error);
+    function resetUI() {
+        document.getElementById('error-box').classList.add('hidden');
         document.getElementById('status').classList.add('hidden');
-        document.getElementById('error-box').classList.remove('hidden');
-        document.getElementById('error-summary').innerText = error.message;
+        document.getElementById('download-form').classList.remove('hidden');
+        document.getElementById('submit-btn').disabled = false;
     }
-}
 
-        function goToNotice(event) {
-    event.preventDefault(); // 폼이 멋대로 새로고침되는 걸 막아요
-
-    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-
-    const form = document.getElementById('download-form');
-    const statusDiv = document.getElementById('status');
-    const btn = document.getElementById('submit-btn');
-
-    // 1. 공통적으로 로딩 화면 표시
-    form.classList.add('hidden');
-    statusDiv.classList.remove('hidden');
-    btn.disabled = true;
-
-    if (isLocal) {
-        // A. 로컬 환경: 실제 다운로드 함수 실행
-        console.log("로컬 환경 확인: 다운로드를 진행합니다.");
-        startDownload(event);
-    } else {
-        // B. 배포 환경: 1.2초 뒤에 안내 페이지로 이동
-        console.log("배포 환경 확인: 안내 페이지로 이동합니다.");
-        setTimeout(() => {
-            location.href = '/youtube_music_suffle_test';
-        }, 1200);
+    async function startDownload(event) {
+        const formData = new FormData(document.getElementById('download-form'));
+        try {
+            const response = await fetch('/download', { method: 'POST', body: formData });
+            if (response.ok) {
+                const blob = await response.blob();
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let fileName = 'download.zip';
+                if (contentDisposition) {
+                    const fileNameMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/);
+                    if (fileNameMatch) fileName = decodeURIComponent(fileNameMatch[1]);
+                }
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                resetUI();
+            } else {
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message);
+                } else {
+                    throw new Error("서버 연결에 실패했습니다.");
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            document.getElementById('status').classList.add('hidden');
+            document.getElementById('error-box').classList.remove('hidden');
+            document.getElementById('error-summary').innerText = error.message;
+        }
     }
-}
 
-    </script>
-</body>
-</html>
+    function goToNotice(event) {
+        event.preventDefault();
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        const form = document.getElementById('download-form');
+        const statusDiv = document.getElementById('status');
+        const btn = document.getElementById('submit-btn');
+
+        form.classList.add('hidden');
+        statusDiv.classList.remove('hidden');
+        btn.disabled = true;
+
+        if (isLocal) {
+            startDownload(event);
+        } else {
+            setTimeout(() => { location.href = '/youtube_music_suffle_test'; }, 1200);
+        }
+    }
+</script>
+{% endblock %}
