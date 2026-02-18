@@ -22,7 +22,10 @@ database_url = os.environ.get('DATABASE_URL')
 if database_url:
     if database_url.startswith("postgres://"):
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace("postgres://", "postgresql://", 1)
-    else:
+
+        if "?" not in database_url:
+            database_url += "?sslmode=require"
+
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     try:
