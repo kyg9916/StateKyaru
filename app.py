@@ -105,35 +105,50 @@ def send_discord():
 
 @app.route('/board')
 def index():
-    # ⭐ 1. 주소창에 ?mode=plum 이 있는지 확인하는 코드 추가
-    is_admin = request.args.get('mode') == 'plum'
+    try:
+        # --- 여기서부터 기존 코드 그대로 시작 ---
+        is_admin = request.args.get('mode') == 'plum'
+        page = request.args.get('page', 1, type=int)
+        keyword = request.args.get('search', '')
+        category = request.args.get('category', '')
+        sort = request.args.get('sort', 'new')
 
-    page = request.args.get('page', 1, type=int)
-    keyword = request.args.get('search', '')
-    category = request.args.get('category', '')
-    sort = request.args.get('sort', 'new')
+        query = Post.query
+        if keyword: query = query.filter(Post.title.contains(keyword))
+        if category: query = query.filter(Post.category == category)
 
-    query = Post.query
-    if keyword: query = query.filter(Post.title.contains(keyword))
-    if category: query = query.filter(Post.category == category)
+        if sort == 'views':
+            query = query.order_by(Post.views.desc())
+        else:
+            query = query.order_by(Post.id.desc())
 
-    if sort == 'views':
-        query = query.order_by(Post.views.desc())
-    else:
-        query = query.order_by(Post.id.desc())
+        pagination = query.paginate(page=page, per_page=10, error_out=False)
+        posts = pagination.items
+        for post in posts: post.thumbnail = get_first_image(post.content)
 
-    pagination = query.paginate(page=page, per_page=10, error_out=False)
-    posts = pagination.items
-    for post in posts: post.thumbnail = get_first_image(post.content)
+        return render_template('board.html',
+                               posts=posts,
+                               pagination=pagination,
+                               keyword=keyword,
+                               current_category=category,
+                               current_sort=sort,
+                               is_admin=is_admin)
+        # --- 여기까지 기존 코드 끝 ---
 
-    # ⭐ 2. return 할 때 마지막에 is_admin=is_admin 을 꼭 넣어주세요!
-    return render_template('board.html',
-                           posts=posts,
-                           pagination=pagination,
-                           keyword=keyword,
-                           current_category=category,
-                           current_sort=sort,
-                           is_admin=is_admin)
+    except Exception as e:
+        # 💡 DB 만료 등으로 에러가 발생하면 이 코드가 실행됩니다!
+        print(f"시스템 알림: DB 연결 불가 ({e})")
+        # 안내 문구를 직접 화면에 뿌려줍니다 (별도 HTML 파일 만들기 귀찮을 때 꿀팁!)
+        return """
+        <div style="text-align:center; padding:100px; font-family:sans-serif;">
+            <h1 style="font-size:50px;">🛠️</h1>
+            <h2>데이터베이스 갱신 및 점검 중</h2>
+            <p style="color:#666;">현재 무료 db 만료(사용한도 초과)로 인한 시스템 갱신중입니다. <br>개발자에게 문의하십시오.</p>
+            <p style="color:#adb5bd; font-size:12px;">(개발자: 파인애플주먹밥)</p>
+        </div>
+        """, 503
+
+
 
 @app.route('/write', methods=['GET', 'POST'])
 def write():
