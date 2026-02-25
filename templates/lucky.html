@@ -189,6 +189,79 @@ button:disabled {
     border-radius: 4px;
     margin-top: 20px;
 }
+
+    /* 📱 타로 운세 모바일 반응형 스타일 */
+@media (max-width: 768px) {
+    body {
+        overflow-y: auto; /* 결과가 길어지면 스크롤이 필요할 수 있어 */
+        padding: 20px 10px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+        letter-spacing: 5px; /* 글자 간격을 폰에 맞게 조절 */
+        margin-bottom: 15px;
+    }
+
+    .notice-text {
+        font-size: 0.8rem;
+        text-align: center;
+        padding: 0 20px;
+    }
+
+    /* 1. 카드가 놓이는 공간 조절 */
+    .scene {
+        height: 400px; /* 폰에서는 높이를 조금 낮춰요 */
+        perspective: 1000px; /* 원근감을 폰에 맞게 조정 */
+    }
+
+    /* 2. 카드 크기 다이어트 (제일 중요!) */
+    .card {
+        width: 160px;  /* 폰 화면에 맞게 너비 축소 */
+        height: 280px; /* 높이도 비율에 맞춰 축소 */
+    }
+
+    /* 3. 카드 뒷면 내용 조절 */
+    .tarot-img {
+        height: 120px; /* 이미지 크기 줄이기 */
+    }
+
+    .fortune-title {
+        font-size: 1rem;
+        margin-bottom: 8px;
+    }
+
+    .fortune-desc {
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
+    /* 4. 카드 섞기 애니메이션 범위 조절 */
+    /* 폰은 좌우가 좁으니까 섞일 때 화면 밖으로 안 나가게 조절해야 해! */
+    .card.shuffling {
+        /* JS에서 애니메이션 계산 시 참고 */
+    }
+
+    /* 5. 결과 화면 (뒤집힌 카드) 위치 */
+    .card.flipped {
+        transform: translate(-50%, -55%) rotateY(180deg) scale(1.1) !important;
+        width: 220px;  /* 결과 화면은 조금 더 크게! */
+        height: 380px;
+    }
+
+    /* 6. 하단 버튼 */
+    .controls {
+        margin-top: 20px;
+        width: 100%;
+    }
+
+    button {
+        padding: 10px 30px;
+        font-size: 0.9rem;
+        width: 80%; /* 버튼을 누르기 편하게 넓게 */
+    }
+}
+
 </style>
 
 

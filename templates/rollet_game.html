@@ -62,6 +62,90 @@
 
         .btn-mute { background-color: #7f8c8d !important; }
 .btn-mute.off { background-color: #c0392b !important; }
+
+        /* 📱 룰렛 게임 모바일 반응형 스타일 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+        overflow-y: auto; /* 세로로 길어지니까 스크롤 허용! */
+    }
+
+    /* 1. 게임 컨테이너 너비 조절 */
+    #game-container {
+        width: 100% !important;
+        box-sizing: border-box;
+        padding: 15px 10px;
+    }
+
+    /* 2. 상단 내비게이션 정렬 */
+    .top-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+    }
+    .btn-nav {
+        padding: 8px 12px;
+        font-size: 12px;
+        flex: 1; /* 버튼들이 가로로 꽉 차게 */
+        text-align: center;
+    }
+
+    /* 3. 플레이어/딜러 패널을 위아래로 배치 */
+    .status-grid {
+        grid-template-columns: 1fr; /* 1열로 변경 */
+        gap: 15px;
+    }
+
+    .entity-box {
+        padding: 10px;
+    }
+
+    /* 4. 아이템 슬롯 크게 키우기 (터치 오타 방지!) */
+    .item-container {
+        grid-template-columns: repeat(4, 1fr); /* 4열 유지하되 크기 최적화 */
+        min-height: 80px;
+    }
+    .item-slot {
+        padding: 12px 2px; /* 위아래로 넉넉하게 */
+        font-size: 11px;
+        word-break: keep-all; /* 단어 안 깨지게 */
+    }
+
+    /* 5. 로그 창 높이 조절 */
+    #log-window {
+        height: 180px; /* 폰에서는 조금 낮춰서 버튼이 보이게 */
+        font-size: 12px;
+    }
+
+    /* 6. 사격 버튼 (가장 중요!) */
+    .action-area {
+        flex-direction: row; /* 가로 유지하되 높이 조절 */
+        gap: 10px;
+    }
+    .btn-action {
+        height: 70px; /* 더 큼직하게! */
+        font-size: 16px;
+    }
+
+    /* 7. 알림창 크기 조절 */
+    /* showGameAlert 함수로 생성되는 창이 폰 화면을 뚫고 나가지 않게 조절 */
+    div[style*="font-size: 40px"] {
+        font-size: 20px !important;
+        padding: 20px 30px !important;
+        width: 80% !important;
+    }
+
+    /* 8. 모달(도감) 창 */
+    .modal-content {
+        width: 90% !important;
+        margin: 15% auto;
+        padding: 15px;
+    }
+    .item-info-grid {
+        grid-template-columns: 80px 1fr;
+        font-size: 12px;
+    }
+}
     </style>
 </head>
 <body>

@@ -49,6 +49,53 @@
         70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
         100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
+
+    @media (max-width: 640px) {
+    /* 1. 전체 컨테이너 폭 조절 */
+    .analysis-wrapper {
+        padding: 20px 15px; /* 양옆 여백을 줘서 화면에 딱 붙지 않게 */
+        padding-top: 30px;
+    }
+
+    /* 2. 메인 공지 카드 조절 */
+    .notice-glass {
+        padding: 30px 20px !important; /* 안쪽 여백을 폰에 맞게 줄여요 */
+        border-radius: 2rem !important;
+    }
+
+    /* 3. 아이콘 크기 다이어트 */
+    .w-24.h-24 {
+        width: 5rem !important;
+        height: 5rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    .text-5xl { font-size: 2.5rem !important; }
+
+    /* 잠금 아이콘 위치 살짝 조정 */
+    .absolute.-bottom-2.-right-2 {
+        width: 2rem !important;
+        height: 2rem !important;
+        border-width: 2px !important;
+    }
+
+    /* 4. 제목 및 텍스트 크기 */
+    h1 { font-size: 1.5rem !important; }
+    .text-sm { font-size: 0.8rem !important; }
+    .text-\[15px\] { font-size: 0.85rem !important; }
+
+    /* 5. 안내 박스(점선) 조절 */
+    .bg-white\/50.p-4 {
+        padding: 12px !important;
+    }
+    .italic { font-size: 0.75rem !important; }
+
+    /* 6. 문의하기 버튼 */
+    button {
+        padding: 1rem !important;
+        font-size: 1rem !important;
+        border-radius: 1.2rem !important;
+    }
+}
 </style>
 
 <div class="analysis-wrapper">

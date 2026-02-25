@@ -43,6 +43,50 @@
     /* 주말 색상 */
     .fc-day-sun a { color: #e03131 !important; }
     .fc-day-sat a { color: #1971c2 !important; }
+
+    /* 📱 캘린더 모바일 반응형 스타일 */
+@media (max-width: 992px) {
+    /* 1. 레이아웃을 세로로 변경 */
+    .calendar-wrapper {
+        flex-direction: column;
+        padding: 0 10px;
+        margin: 10px auto;
+    }
+
+    /* 2. 달력 높이 조절 */
+    #calendar {
+        width: 100%;
+        min-height: 500px; /* 모바일에서는 조금 컴팩트하게 */
+        padding: 10px;
+        box-sizing: border-box;
+    }
+
+    /* 3. 할 일 목록(Todo) 섹션 조절 */
+    #todo-section {
+        width: 100%;
+        position: static; /* 화면 옆에 붙어있지 않고 아래로 내려가게 */
+        margin-top: 20px;
+        max-height: none;
+        box-sizing: border-box;
+    }
+
+    /* 4. 모달창 크기 조절 (화면에 꽉 차게) */
+    .modal-content {
+        width: 90%;
+        padding: 20px;
+    }
+
+    /* 5. 달력 내부 글자 크기 조절 */
+    .fc {
+        font-size: 0.85rem; /* 글씨를 살짝 줄여서 칸을 확보해요 */
+    }
+
+    /* 6. 상단 버튼 정렬 */
+    .fc .fc-toolbar {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
 </style>
 {% endblock %}
 

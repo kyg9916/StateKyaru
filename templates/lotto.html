@@ -83,6 +83,72 @@
         .modal-content { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 500px; width: 90%; position: relative; }
         .modal-close { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #999; }
         .predict-numbers { margin: 25px 0; }
+
+        /* 모바일용 */
+        @media (max-width: 768px) {
+    body {
+        padding: 10px; /* 화면 끝에 너무 붙지 않게 */
+    }
+
+    .container {
+        padding: 20px 15px; /* 안쪽 여백 줄이기 */
+        border-radius: 15px;
+    }
+
+    h1 { font-size: 1.5rem; }
+
+    /* 1. 대시보드 (돈 표시) - 2열로 깔끔하게 */
+    .dashboard {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .stat-item { padding: 15px 10px; }
+    .stat-item span { font-size: 1.1em; }
+
+    /* 2. 컨트롤 영역 - 버튼들이 화면을 꽉 채우도록 */
+    .input-row {
+        flex-direction: column; /* 입력창과 버튼을 위아래로 */
+        gap: 8px;
+    }
+    input[type="number"], .btn-charge, .btn-main {
+        width: 100% !important; /* 가로 너비 꽉 채우기 */
+        margin: 0 !important;
+    }
+
+    /* 자동/수동/반자동 버튼들 가로로 나열 */
+    .controls .input-row:last-of-type {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr; /* 자동 버튼을 조금 더 크게 */
+        gap: 5px;
+        flex-direction: row;
+    }
+
+    /* 3. 로또 공 크기 조절 (폰에서 안 겹치게!) */
+    .ball {
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        font-size: 0.75em;
+        margin-right: 2px;
+    }
+
+    /* 4. 로그 내용 - 글자 작게 해서 한 줄에 다 보이게 */
+    .log-entry {
+        padding: 10px 5px;
+        flex-direction: column; /* 번호랑 당첨여부를 위아래로 */
+        align-items: flex-start;
+        gap: 5px;
+    }
+    .win-tag {
+        align-self: flex-end; /* 당첨 태그는 오른쪽 끝에! */
+    }
+
+    /* 5. 모달 창 조절 */
+    .modal-content {
+        padding: 25px 15px;
+        width: 95%;
+    }
+}
     </style>
 </head>
 <body>

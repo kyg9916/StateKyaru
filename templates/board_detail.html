@@ -26,6 +26,64 @@
         .back-link { text-decoration: none; color: #888; font-size: 14px; }
         .edit-btn { color: #5c7cfa; text-decoration: none; font-weight: bold; }
         .delete-btn { background: none; border: none; color: #f03e3e; cursor: pointer; font-family: inherit; font-size: 14px; }
+
+        안녕! 게시글 내용을 보여주는 board_detail.html이구나? 이건 친구들이 글을 읽고 댓글을 다는 중요한 페이지니까, 모바일에서 글자가 너무 작지 않게 하고 댓글 입력창이 화면에 꽉 차게 만드는 게 포인트야.
+
+지금 코드는 padding: 50px이나 max-width: 800px 같은 설정 때문에 모바일에서 보면 좌우 여백이 너무 넓어서 정작 글 읽는 공간이 좁아질 수 있어.
+
+초록자두가 모바일에서도 읽기 편하게 고쳐줄게!
+
+🛠 board_detail.html 모바일 대응 수정
+<style> 태그 안에 기존 코드 맨 아래에 이 미디어 쿼리를 추가해줘.
+
+CSS
+/* 📱 게시글 상세보기 모바일 반응형 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px; /* 바깥 여백을 대폭 줄여서 화면을 넓게 써요 */
+    }
+
+    .container {
+        padding: 20px; /* 내부 여백도 살짝 줄여요 */
+        border-radius: 0; /* 모바일 장점상 꽉 차게 보이도록 모서리를 펴기도 해요 */
+    }
+
+    .post-title {
+        font-size: 22px; /* 제목이 너무 크면 줄바꿈이 심하니 조금 줄여요 */
+    }
+
+    .post-info {
+        font-size: 12px; /* 정보창 글씨도 살짝 작게 */
+        line-height: 1.5;
+    }
+
+    /* 댓글 입력창 조절 */
+    form[action*="add_comment"] {
+        padding: 15px !important;
+    }
+
+    form[action*="add_comment"] div {
+        flex-direction: column; /* 댓글창과 등록 버튼을 위아래로 */
+        display: flex;
+        gap: 10px;
+    }
+
+    form[action*="add_comment"] input[name="author"] {
+        width: 100% !important; /* 이름 입력칸도 넓게 */
+    }
+
+    form[action*="add_comment"] button {
+        width: 100%; /* 등록 버튼도 누르기 편하게 꽉 차게 */
+        height: 45px;
+    }
+
+    /* 하단 메뉴 조절 */
+    .footer-menu {
+        flex-direction: column; /* 목록으로와 수정/삭제를 위아래로 */
+        gap: 20px;
+        align-items: center;
+    }
+}
     </style>
 </head>
 <body>

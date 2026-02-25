@@ -15,13 +15,6 @@
             --header-height: 70px;
         }
 
-        /* 다크모드 대응 (원하시면 사용) */
-        body.dark-mode {
-            --bg-color: #1e1f22;
-            --text-color: #dbdee1;
-            --card-bg: #2b2d31;
-        }
-
         body {
             font-family: 'Noto Sans KR', sans-serif;
             color: var(--text-color);
@@ -31,7 +24,7 @@
             transition: background-color 0.3s;
         }
 
-        /* 헤더 네비게이션 - 기존 스타일 그대로 유지 */
+        /* 헤더 기본 스타일 */
         .navbar {
             background-color: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(10px);
@@ -44,20 +37,56 @@
         .navbar-brand {
             font-weight: 800; color: var(--accent-color);
             text-decoration: none; font-size: 1.4rem; letter-spacing: -0.5px; margin-right: 40px;
+            flex-shrink: 0; /* 로고가 찌그러지지 않게 방지 */
         }
         .navbar-nav { display: flex; gap: 25px; align-items: center; flex-grow: 1; }
         .nav-link {
             font-weight: 600; color: #555; text-decoration: none; cursor: pointer; font-size: 15px; transition: 0.2s;
+            white-space: nowrap; /* 글자가 밑으로 떨어지는 것 방지 */
         }
         .nav-link:hover { color: var(--accent-color); transform: translateY(-1px); }
         .developer { font-size: 0.85rem; color: #aaa; margin-left: auto; font-weight: 500; }
 
-        /* 메인 정렬 래퍼 */
+        /* 📱 모바일 반응형 핵심 코드 (@media) */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 15px;
+                flex-direction: column; /* 로고 아래에 메뉴가 오도록 */
+                height: auto;
+                padding-top: 10px;
+            }
+
+            .navbar-brand {
+                margin-right: 0;
+                margin-bottom: 5px;
+                font-size: 1.1rem;
+            }
+
+            .navbar-nav {
+                width: 100%;
+                justify-content: flex-start; /* 왼쪽부터 정렬 */
+                overflow-x: auto; /* 🌟 옆으로 슥슥 밀 수 있게! */
+                padding-bottom: 12px;
+                gap: 15px;
+                /* 아이폰 부드러운 스크롤 */
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* 스크롤바가 안 보이게 숨기면 훨씬 깔끔해! */
+            .navbar-nav::-webkit-scrollbar { display: none; }
+
+            .developer { display: none; } /* 화면 좁으니 개발자명은 숨기자 */
+
+            body {
+                /* 로고 + 메뉴 두 줄이 되었으니 본문을 더 내려줘야 안 가려져! */
+                padding-top: 110px;
+            }
+        }
+
         .main-wrapper {
             display: flex; max-width: 1400px; margin: 0 auto; gap: 30px; padding: 0 20px 50px 20px; align-items: flex-start;
         }
 
-        /* 추가 스타일 블록 */
         {% block extra_style %}{% endblock %}
     </style>
 </head>
@@ -66,11 +95,11 @@
 <nav class="navbar">
     <a class="navbar-brand" href="/">📡 상태알라미 v6.7</a>
     <div class="navbar-nav">
-        <a class="nav-link" style="color: #4dabf7;" onclick="location.href='/steam_stats'">스팀 통계 🎮</a>
-        <a class="nav-link" style="color: #ff6b6b;" onclick="location.href='/youtube'">유튜브 다운 🎵</a>
-        <a class="nav-link" style="color: #51cf66;" onclick="location.href='/lotto'">로또 번호 😎</a>
-        <a class="nav-link" style="color: #cc5de8;" onclick="location.href='/rollet'">벅샷룰렛 🎰</a>
-        <a class="nav-link" style="color: #fcc419;" onclick="location.href='/lucky'">타로 운세 ✨</a>
+        <a class="nav-link" style="color: #4dabf7;" onclick="location.href='/steam_stats'">스팀 🎮</a>
+        <a class="nav-link" style="color: #ff6b6b;" onclick="location.href='/youtube'">유튜브 🎵</a>
+        <a class="nav-link" style="color: #51cf66;" onclick="location.href='/lotto'">로또 😎</a>
+        <a class="nav-link" style="color: #cc5de8;" onclick="location.href='/rollet'">룰렛 🎰</a>
+        <a class="nav-link" style="color: #fcc419;" onclick="location.href='/lucky'">타로 ✨</a>
         <a class="nav-link" style="color: var(--accent-color);" onclick="location.href='/board'">🎈 게시판</a>
         <a class="nav-link" style="color: var(--accent-color);" onclick="location.href='/calendar'">😍 캘린더</a>
     </div>

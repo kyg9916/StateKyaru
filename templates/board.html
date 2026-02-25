@@ -43,6 +43,80 @@
     .page-num { padding: 10px 16px; color: #777; text-decoration: none; border-radius: 12px; background: #f8f9fa; transition: 0.2s; }
     .page-num:hover { background: #e9ecef; }
     .page-num.active { background: var(--accent-color); color: white; font-weight: bold; }
+
+@media (max-width: 992px) {
+    /* 1. 메인 레이아웃을 세로로 변경 */
+    .main-wrapper {
+        flex-direction: column;
+        padding: 0 10px 30px 10px;
+    }
+
+    /* 2. 사이드바(카테고리)를 가로 스크롤로 변경 */
+    .sidebar {
+        width: 100%;
+        min-width: 0;
+        position: static; /* 고정 해제 */
+        padding: 15px;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+    }
+
+    .category-list {
+        display: flex;
+        overflow-x: auto; /* 가로로 슥슥 밀게 함 */
+        gap: 10px;
+        padding-bottom: 5px;
+    }
+
+    .category-link {
+        white-space: nowrap; /* 글자 줄바꿈 방지 */
+        padding: 8px 15px;
+    }
+
+    /* 3. 본문 영역 패딩 조절 */
+    .content-area {
+        padding: 20px 15px;
+    }
+
+    /* 4. 검색창 조절 */
+    .search-container {
+        width: 100%;
+        margin-top: 15px;
+    }
+    .search-input {
+        flex: 1;
+        width: auto !important; /* 고정 너비 해제 */
+    }
+
+    /* 5. ⭐ 가장 중요한 테이블! 모바일에서는 필요 없는 열 숨기기 */
+    table thead th:nth-child(1), /* NO 숨기기 */
+    table thead th:nth-child(3), /* 작성자 숨기기 */
+    table thead th:nth-child(4), /* 날짜 숨기기 */
+    table thead th:nth-child(5), /* 조회 숨기기 */
+    table tbody td:nth-child(1),
+    table tbody td:nth-child(3),
+    table tbody td:nth-child(4),
+    table tbody td:nth-child(5) {
+        display: none;
+    }
+
+    /* 제목 부분만 넓게 보이게 */
+    table th, table td {
+        padding: 15px 5px;
+    }
+
+    .thumb-img {
+        width: 45px;
+        height: 45px;
+    }
+
+    /* 상단 제목과 글 개수 부분 세로 배치 */
+    .content-area > div:first-child {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+}
+
 {% endblock %}
 
 {% block content %}
@@ -64,7 +138,7 @@
     </aside>
 
     <div class="content-area">
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 35px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 35px; flex-wrap: wrap; gap: 15px;">
             <div>
                 <h2 style="margin: 0; font-size: 26px; color: var(--accent-color); letter-spacing: -1px;">
                     {{ current_category if current_category else '전체 소식' }} 

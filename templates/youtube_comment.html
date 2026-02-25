@@ -100,10 +100,52 @@
     td { padding: 16px; background: white; border: 1px solid #f1f5f9; border-radius: 12px; }
     .toxic-text { color: var(--dark-red); font-weight: 500; }
 
-    @media (max-width: 1024px) {
-        .dashboard-grid, .analysis-tabs, .video-info-box { grid-template-columns: 1fr; flex-direction: column; }
-        .video-thumb { width: 100%; }
+    /* 📱 유튜브 여론 분석기 모바일 최적화 */
+/* 📱 유튜브 여론 분석기 - 짤림 방지 모바일 최적화 */
+@media (max-width: 768px) {
+    /* 1. 전체 여백 줄이기 (화면을 넓게 써야 안 짤려!) */
+    .analysis-wrapper { padding: 5px; }
+    .card { padding: 20px 15px; border-radius: 1.5rem; margin-bottom: 15px; }
+
+    /* 2. 이미지(차트)가 화면 밖으로 나가는 거 방지 */
+    .img-fluid {
+        max-width: 100%;
+        height: auto !important; /* 높이를 자동 조절해서 비율 유지 */
+        display: block;
     }
+
+    /* 3. 통계 미니 카드 폰트 크기 조절 */
+    .stat-grid {
+        grid-template-columns: repeat(2, 1fr) !important; /* 무조건 2열 고정 */
+        gap: 10px;
+    }
+    .mini-card p { font-size: 0.9rem !important; }
+
+    /* 4. 댓글 표(Table) 짤림 해결 (가장 중요!) */
+    table, tr, td {
+        display: block !important; /* 표 형식을 깨고 위아래로 쌓기 */
+        width: 100% !important;
+    }
+    td {
+        padding: 8px 0 !important;
+        white-space: normal !important; /* 긴 댓글이 옆으로 안 가고 자동 줄바꿈 되게! */
+        word-break: break-all; /* 영어나 링크가 길어도 강제 줄바꿈 */
+    }
+    td[width="150"], td[width="100"] {
+        width: auto !important; /* 고정 너비 해제 */
+        display: inline-block; /* 작성자랑 좋아요는 한 줄에 살짝 걸치게 */
+    }
+
+    /* 5. 비디오 정보 박스 */
+    .video-info-box { flex-direction: column; }
+    .video-thumb { width: 100% !important; margin-bottom: 15px; }
+
+    /* 6. 감정바 텍스트가 넘칠 때 */
+    .sentiment-bar {
+        font-size: 10px; /* 글자 크기 더 줄이기 */
+        height: 35px;
+    }
+}
 </style>
 
 <div class="analysis-wrapper">

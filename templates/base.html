@@ -86,11 +86,63 @@
             from { opacity: 0; transform: translateX(-10px); }
             to { opacity: 1; transform: translateX(0); }
         }
+
+        /* 모바일용 햄버거 버튼 스타일 */
+.menu-toggle {
+    display: none; /* 기본적으론 안 보여 */
+    position: fixed;
+    top: 1.5rem;
+    left: 1.5rem;
+    z-index: 100;
+    background: #ef4444;
+    color: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    cursor: pointer;
+}
+
+/* 모바일 전용 반응형 코드 (@media) */
+@media (max-width: 1024px) {
+    .menu-toggle {
+        display: flex; /* 모바일에서만 햄버거 버튼 등장! */
+    }
+
+    .sidebar {
+        transform: translateX(-100%); /* 사이드바를 왼쪽으로 숨김 */
+        transition: transform 0.3s ease-in-out;
+        width: 250px;
+    }
+
+    /* 사이드바가 열렸을 때 (클래스 추가 방식) */
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0; /* 왼쪽 여백 삭제 */
+        padding: 1.5rem;
+        padding-top: 5rem; /* 햄버거 버튼 자리를 위해 위쪽 여백 추가 */
+    }
+}
     </style>
 </head>
 <body>
 
-    <nav class="sidebar">
+<div class="menu-toggle" onclick="toggleMenu()">
+        <i class="fa-solid fa-bars"></i>
+    </div>
+
+
+
+    <nav class="sidebar" id="sidebar">
+        <div class="lg:hidden absolute top-5 right-5 text-gray-400" onclick="toggleMenu()">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </div>
+
         <div class="mb-12 px-4">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-red-200">
@@ -120,7 +172,9 @@
             <div onclick="location.href='/youtube_sub/subscribers'" class="nav-item {{ 'active' if request.path == '/youtube_sub/subscribers' else '' }}">
                 <i class="fa-solid fa-chart-line"></i> 구독 채널 대시보드
             </div>
-        </div> <div class="pt-6 border-t border-gray-100 px-4">
+        </div>
+
+        <div class="pt-6 border-t border-gray-100 px-4">
             <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Developer</p>
             <p class="text-sm font-bold text-gray-700 mt-1">초록자두 (Green Plum)</p>
         </div>
@@ -131,4 +185,19 @@
     </main>
 
 </body>
+<script>
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        // 메뉴 클릭 시 자동으로 닫히게 (선택 사항)
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 1024) {
+                    toggleMenu();
+                }
+            });
+        });
+    </script>
 </html>

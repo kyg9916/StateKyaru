@@ -26,6 +26,46 @@
 
         /* 써머노트 에디터 스타일 살짝 보정 */
         .note-editor { border-radius: 10px !important; border: 1px solid #ddd !important; }
+
+        @media (max-width: 768px) {
+    body {
+        padding: 20px 0; /* 위아래 여백을 줄여서 공간 확보! */
+    }
+
+    .container-custom {
+        margin: 0 15px; /* 양옆 여백을 살짝 줘서 화면에 딱 붙지 않게 해요 */
+        padding: 25px 20px; /* 내부 공간도 실속 있게 조절! */
+    }
+
+    h2 {
+        font-size: 20px; /* 제목 크기를 적당히 줄여요 */
+        margin-bottom: 25px;
+    }
+
+    /* 버튼 영역: 취소와 등록 버튼을 세로로 쌓기 */
+    .btn-area {
+        flex-direction: column-reverse; /* 등록하기 버튼이 위로 오게! */
+        gap: 10px;
+    }
+
+    .submit-btn, .cancel-btn {
+        width: 100%; /* 버튼이 화면에 꽉 차서 누르기 편해요 */
+        padding: 15px;
+        margin: 0;
+        border-radius: 12px; /* 둥근 느낌 유지 */
+    }
+
+    /* 썸머노트 에디터가 폰 화면을 뚫고 나가지 않게 조절 */
+    .note-editor {
+        width: 100% !important;
+    }
+
+    .note-toolbar {
+        padding: 5px !important;
+        display: flex;
+        flex-wrap: wrap; /* 툴바 아이콘들이 여러 줄로 예쁘게 내려오도록 */
+    }
+}
     </style>
 </head>
 <body>

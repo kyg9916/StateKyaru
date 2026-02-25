@@ -65,6 +65,84 @@
         .modal-content { background-color: var(--card-bg); margin: 5% auto; padding: 30px; border-radius: var(--border-radius); width: 80%; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative; border: 2px solid var(--accent-color); }
         .close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #888; }
         .modal-kyaru-box { background: rgba(255, 118, 117, 0.1); border-radius: 12px; padding: 15px; border: 1px dashed #ff7675; margin-top: 15px; }
+
+        @media (max-width: 768px) {
+    body {
+        padding-top: 110px !important; /* 상단바가 2층이라 더 높여줬어! */
+    }
+
+    /* 1. 상단 네비게이션을 2층 구조로 정렬 */
+    .navbar .container-fluid {
+        display: flex !important;
+        flex-direction: column !important; /* 위아래로 쌓기 */
+        align-items: flex-start !important;
+        padding: 10px 15px !important;
+    }
+
+    /* [1층] 제목: 작게 위쪽 배치 */
+    .navbar-brand {
+        font-size: 14px !important;
+        margin: 0 0 10px 0 !important;
+        width: 100% !important;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        padding-bottom: 5px !important;
+    }
+
+    /* [2층] 메뉴들과 다크모드 버튼을 한 팀으로 묶어서 스크롤! */
+    .navbar-nav {
+        display: flex !important;
+        flex-direction: row !important; /* 가로 나열 */
+        width: 100% !important;
+        overflow-x: auto !important; /* 가로 스크롤 허용 */
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch; /* 폰에서 부드럽게 스크롤 */
+        padding: 5px 0 !important;
+        align-items: center !important;
+        scrollbar-width: none; /* 스크롤바 안 보이게 */
+    }
+
+    .navbar-nav::-webkit-scrollbar {
+        display: none; /* 크롬/사파리 스크롤바 숨기기 */
+    }
+
+    /* 메뉴 링크들 간격 조절 */
+    .nav-link {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+        display: inline-block !important;
+    }
+
+    /* 🌙 다크모드 버튼도 이제 메뉴랑 같이 스크롤 됨! */
+    .theme-btn {
+        flex-shrink: 0 !important; /* 찌그러짐 방지 */
+        width: 36px !important;
+        height: 36px !important;
+        margin-left: 10px !important;
+        font-size: 16px !important;
+        display: inline-block !important; /* 메뉴 뒤에 딱 붙게 */
+    }
+
+    .developer { display: none; }
+
+    /* 2. 메인 화면 구성 최적화 */
+    .main-grid { flex-direction: column !important; padding: 10px !important; gap: 15px !important; }
+    .grid-column { width: 100% !important; flex: none !important; }
+    .card { padding: 20px 15px !important; margin-bottom: 0 !important; }
+    h2 { font-size: 1.2rem !important; }
+
+    /* 3. 버튼들 (2열 배치) */
+    .btn-group-custom {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+    }
+    .btn-group-custom button { padding: 15px 5px !important; width: 100% !important; margin: 0 !important; }
+    .btn-back { grid-column: span 2 !important; padding: 18px !important; font-size: 16px !important; }
+
+    /* 4. 상태 및 기타 조절 */
+    .status-icon { font-size: 4rem !important; }
+    .modal-content { width: 95% !important; padding: 20px !important; margin: 20% auto !important; }
+}
     </style>
 </head>
 <body>
@@ -72,6 +150,7 @@
 <nav class="navbar navbar-expand-lg fixed-top px-4">
     <div class="container-fluid">
         <a class="navbar-brand" href="#">📡 디스코드 상태알라미 v6.7</a>
+
         <div class="navbar-nav me-auto">
             <a class="nav-link" onclick="openModal()">사용 가이드 📖</a>
             <a class="nav-link" onclick="openStatsModal()">통계 보기 📊</a>
@@ -82,9 +161,11 @@
             <a class="nav-link" style="color: #041133 !important; cursor: pointer;" onclick="location.href='/lucky'">❤️ 타로보기</a>
             <a class="nav-link" style="color: #000000 !important; cursor: pointer;" onclick="location.href='/board'">🎈 게시판</a>
             <a class="nav-link" href="{{ url_for('plum_calendar.calendar_page') }}">🎈 캘린더</a>
+
+            <button class="theme-btn" onclick="toggleTheme()">🌓</button>
+
+            <span class="nav-link developer-mobile" style="font-size: 0.7rem; color: #888; padding-left: 20px;">By. 김윤겸</span>
         </div>
-        <div class="developer me-3" style="font-size: 0.8rem; color: #888;">Developer by. 김윤겸</div>
-        <button class="theme-btn" onclick="toggleTheme()">🌓</button>
     </div>
 </nav>
 

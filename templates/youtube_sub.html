@@ -1,6 +1,75 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<style>
+
+    @media (max-width: 768px) {
+    /* 1. 전체 컨테이너 여백 줄이기 */
+    .py-10.px-6 {
+        padding-top: 20px !important;
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+    }
+
+    /* 2. 메인 검색창 카드 조절 */
+    .glass.p-12 {
+        padding: 30px 20px !important;
+        border-radius: 2rem !important;
+    }
+    h2 { font-size: 1.8rem !important; }
+
+    /* 3. 검색 폼을 세로로 정렬 */
+    form.flex {
+        flex-direction: column;
+        gap: 10px !important;
+    }
+    .input-url, input[name="channel_id"] {
+        width: 100% !important;
+        padding: 15px 20px !important;
+        font-size: 0.9rem !important;
+    }
+    button[type="submit"] {
+        width: 100% !important;
+        padding: 15px !important;
+    }
+
+    /* 4. 카드 그리드 조절 (1열 또는 2열로) */
+    .grid-cols-1.md-grid-cols-5,
+    .grid-cols-1.md-grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr) !important; /* 폰에서는 2열이 예뻐요 */
+        gap: 12px !important;
+    }
+
+    /* 카드 안의 글자 크기 조절 */
+    .glass.p-6 {
+        padding: 15px !important;
+        border-radius: 1.5rem !important;
+    }
+    h6 { font-size: 0.9rem !important; }
+
+    /* 5. 전체 구독 목록 행(Row) 조절 */
+    .px-10.py-5 {
+        padding: 15px 20px !important;
+        flex-direction: column; /* 이름과 날짜를 위아래로 */
+        align-items: flex-start !important;
+    }
+    .text-right {
+        text-align: left !important;
+        margin-top: 8px;
+    }
+    .text-lg { font-size: 1rem !important; }
+}
+
+/* 아주 작은 화면 (아이폰 SE 등) */
+@media (max-width: 480px) {
+    .grid-cols-1.md-grid-cols-5,
+    .grid-cols-1.md-grid-cols-4 {
+        grid-template-columns: 1fr !important; /* 아주 작으면 다시 1열로 */
+    }
+}
+
+</style>
 <div class="w-full max-w-6xl mx-auto py-10 px-6 space-y-12 input-animate">
 
     <div class="glass rounded-[2.5rem] p-12 text-center shadow-2xl shadow-gray-200/50">
