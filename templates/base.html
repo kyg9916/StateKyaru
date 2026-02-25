@@ -128,12 +128,25 @@
         padding-top: 5rem; /* 햄버거 버튼 자리를 위해 위쪽 여백 추가 */
     }
 }
+
+        .show-loading { display: flex !important; }
     </style>
 </head>
 <body>
 
 <div class="menu-toggle" onclick="toggleMenu()">
         <i class="fa-solid fa-bars"></i>
+    </div>
+
+<div id="loading-screen" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-white/80 backdrop-blur-md flex-col">
+        <div class="relative">
+            <div class="w-16 h-16 bg-red-500 rounded-2xl flex items-center justify-center shadow-xl animate-bounce">
+                <i class="fa-solid fa-bolt text-white text-3xl"></i>
+            </div>
+            <div class="absolute -inset-2 border-4 border-red-200 border-t-red-500 rounded-full animate-spin"></div>
+        </div>
+        <p class="mt-8 font-black text-gray-800 text-lg tracking-tighter">Green Plum이 준비 중입니다...</p>
+        <p class="text-gray-400 text-xs mt-2 font-bold uppercase tracking-widest">Wait a second!</p>
     </div>
 
 
@@ -186,6 +199,25 @@
 
 </body>
 <script>
+
+    const loadingScreen = document.getElementById('loading-screen');
+
+    // [방법] 페이지가 바뀌려고 할 때 로딩창 띄우기
+        window.onbeforeunload = function() {
+    loadingScreen.classList.remove('hidden'); // hidden을 지워주고
+    loadingScreen.classList.add('show-loading'); // 보여주는 클래스 추가!
+};
+
+window.addEventListener('pageshow', function(event) {
+    loadingScreen.classList.add('hidden'); // 다시 숨길 땐 hidden 추가
+    loadingScreen.classList.remove('show-loading');
+});
+
+document.addEventListener('submit', function() {
+    loadingScreen.classList.remove('hidden');
+    loadingScreen.classList.add('show-loading');
+});
+
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('active');
@@ -199,5 +231,17 @@
                 }
             });
         });
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        // 로딩창 보여주기!
+        loadingScreen.classList.remove('hidden');
+        loadingScreen.classList.add('show-loading');
+
+        if (window.innerWidth <= 1024) {
+            toggleMenu();
+        }
+    });
+});
     </script>
 </html>

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}멤버십 게시판 - 디스코드 상태알라미{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -87,10 +89,25 @@
             display: flex; max-width: 1400px; margin: 0 auto; gap: 30px; padding: 0 20px 50px 20px; align-items: flex-start;
         }
 
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        /* JS에서 display를 조절하기 편하게 만든 클래스 */
+        .show-loading { display: flex !important; }
+
         {% block extra_style %}{% endblock %}
     </style>
 </head>
 <body>
+
+<div id="loading-screen" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-white/80 backdrop-blur-md flex-col">
+    <div class="relative">
+        <div class="w-16 h-16 bg-red-500 rounded-2xl flex items-center justify-center shadow-xl animate-bounce">
+            <i class="fa-solid fa-bolt text-white text-3xl"></i>
+        </div>
+        <div class="absolute -inset-2 border-4 border-red-200 border-t-red-500 rounded-full animate-spin"></div>
+    </div>
+    <p class="mt-8 font-black text-gray-800 text-lg tracking-tighter">로드중....</p>
+    <p class="text-gray-400 text-xs mt-2 font-bold uppercase tracking-widest">Wait a second!</p>
+</div>
 
 <nav class="navbar">
     <a class="navbar-brand" href="/">📡 상태알라미 v6.7</a>
@@ -107,6 +124,39 @@
 </nav>
 
 {% block content %}{% endblock %}
+
+<script>
+    const loadingScreen = document.getElementById('loading-screen');
+
+    // 페이지 이동 감지
+    window.onbeforeunload = function() {
+        loadingScreen.classList.remove('hidden');
+        loadingScreen.classList.add('show-loading');
+    };
+
+    // 뒤로가기 시 로딩창 제거
+    window.addEventListener('pageshow', function(event) {
+        loadingScreen.classList.add('hidden');
+        loadingScreen.classList.remove('show-loading');
+    });
+
+    // 폼 제출 시 (검색 등)
+    document.addEventListener('submit', function() {
+        loadingScreen.classList.remove('hidden');
+        loadingScreen.classList.add('show-loading');
+    });
+
+    // 게시판의 카테고리 링크나 글 제목 클릭 시 즉시 실행
+    document.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            // 자바스크립트 동작이나 새창 띄우기가 아닐 때만
+            if (!this.href.includes('javascript') && this.target !== '_blank' && this.href !== "#") {
+                loadingScreen.classList.remove('hidden');
+                loadingScreen.classList.add('show-loading');
+            }
+        });
+    });
+</script>
 
 </body>
 </html>
